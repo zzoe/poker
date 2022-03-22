@@ -1,6 +1,7 @@
+use indextree::Arena;
+
 use crate::error::Error;
 use crate::poker::State;
-use indextree::{Arena, NodeId};
 
 pub mod error;
 mod poker;
@@ -22,7 +23,7 @@ fn play() -> Result<(), Error> {
         node_id = State::play(&mut arena, n);
     }
 
-    println!("{:?}", arena);
+    poker::print_arena(&arena, root, root);
 
     Ok(())
 }

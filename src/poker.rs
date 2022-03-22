@@ -1,52 +1,197 @@
-use crate::error::Error;
-use crate::Error::Empty;
-use indextree::{Arena, NodeId};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-const CARD_DISPLAY: &str = "34567890JQKA2BR";
-const THREE: u8 = 0;
-const FOUR: u8 = 1;
-const FIVE: u8 = 2;
-const SIX: u8 = 3;
-const SEVEN: u8 = 4;
-const EIGHT: u8 = 5;
-const NINE: u8 = 6;
-const TEN: u8 = 7;
-const JACK: u8 = 8;
-const QUEEN: u8 = 9;
-const KING: u8 = 10;
-const ACE: u8 = 11;
-const TWO: u8 = 12;
-const BLACK_JOKER: u8 = 13;
-const RED_JOKER: u8 = 14;
+use indextree::{Arena, NodeId};
 
-type Card = u8;
+use crate::error::Error;
 
-fn from_str(s: char) -> Result<Card, Error> {
-    match s {
-        '3' => Ok(THREE),
-        '4' => Ok(FOUR),
-        '5' => Ok(FIVE),
-        '6' => Ok(SIX),
-        '7' => Ok(SEVEN),
-        '8' => Ok(EIGHT),
-        '9' => Ok(NINE),
-        '0' => Ok(TEN),
-        'j' | 'J' => Ok(JACK),
-        'q' | 'Q' => Ok(QUEEN),
-        'k' | 'K' => Ok(KING),
-        '1' | 'a' | 'A' => Ok(ACE),
-        '2' => Ok(TWO),
-        'b' | 'B' => Ok(BLACK_JOKER),
-        'r' | 'R' => Ok(RED_JOKER),
-        _ => Err(Error::InvalidCardValue(s.to_string())),
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum Card {
+    Three = 1,
+    Four = 1 << 1,
+    Five = 1 << 2,
+    Six = 1 << 3,
+    Seven = 1 << 4,
+    Eight = 1 << 5,
+    Nine = 1 << 6,
+    Ten = 1 << 7,
+    Jack = 1 << 8,
+    Queen = 1 << 9,
+    King = 1 << 10,
+    Ace = 1 << 11,
+    Two = 1 << 12,
+    BlackJoker = 1 << 13,
+    RedJoker = 1 << 14,
+}
+
+impl Card {
+    fn from_char(c: char) -> Result<Card, Error> {
+        match c {
+            '3' => Ok(Card::Three),
+            '4' => Ok(Card::Four),
+            '5' => Ok(Card::Five),
+            '6' => Ok(Card::Six),
+            '7' => Ok(Card::Seven),
+            '8' => Ok(Card::Eight),
+            '9' => Ok(Card::Nine),
+            '0' => Ok(Card::Ten),
+            'j' | 'J' => Ok(Card::Jack),
+            'q' | 'Q' => Ok(Card::Queen),
+            'k' | 'K' => Ok(Card::King),
+            '1' | 'a' | 'A' => Ok(Card::Ace),
+            '2' => Ok(Card::Two),
+            'b' | 'B' => Ok(Card::BlackJoker),
+            'r' | 'R' => Ok(Card::RedJoker),
+            _ => Err(Error::InvalidCardValue(c.to_string())),
+        }
+    }
+
+    fn from_u16(n: u16) -> Result<Card, Error> {
+        match n {
+            1 => Ok(Card::Three),
+            0b10 => Ok(Card::Four),
+            0b100 => Ok(Card::Five),
+            0b1000 => Ok(Card::Six),
+            0b10000 => Ok(Card::Seven),
+            0b100000 => Ok(Card::Eight),
+            0b1000000 => Ok(Card::Nine),
+            0b10000000 => Ok(Card::Ten),
+            0b100000000 => Ok(Card::Jack),
+            0b1000000000 => Ok(Card::Queen),
+            0b10000000000 => Ok(Card::King),
+            0b100000000000 => Ok(Card::Ace),
+            0b1000000000000 => Ok(Card::Two),
+            0b10000000000000 => Ok(Card::BlackJoker),
+            0b100000000000000 => Ok(Card::RedJoker),
+            _ => Err(Error::InvalidCardValue(n.to_string())),
+        }
+    }
+
+    fn plus(&self) -> Option<Card> {
+        if Card::RedJoker == *self {
+            None
+        } else {
+            Card::from_u16((*self as u16) << 1).ok()
+        }
+    }
+}
+
+#[derive(Default, Copy, Clone, Debug, PartialEq)]
+struct Hand(u64);
+
+impl Hand {
+    fn new(cards: &str) -> Result<Hand, Error> {
+        if cards.is_empty() {
+            return Err(Error::Empty);
+        }
+
+        let mut hand = Hand(0);
+        hand.draw_str(cards);
+        Ok(hand)
+    }
+
+    fn draw_card(&mut self, card: Card) {
+        let mut card = card as u64;
+        for _ in 0..4 {
+            if self.0 & card == 0 {
+                self.0 |= card;
+                break;
+            }
+            card <<= 16;
+        }
+    }
+
+    /// 摸牌
+    fn draw_str(&mut self, cards: &str) {
+        for c in cards.chars() {
+            match Card::from_char(c) {
+                Ok(card) => self.draw_card(card),
+                Err(e) => eprintln!("{}", e),
+            }
+        }
+    }
+
+    fn play(&self, action: &Action) -> Vec<(Action, Hand)> {
+        let actions = match action {
+            Action::None => self.play_single(None),
+            Action::Single(card) => self.play_single(Some(card)),
+            _ => vec![(Action::None, *self)],
+        };
+        actions
+    }
+
+    fn play_single(&self, card: Option<&Card>) -> Vec<(Action, Hand)> {
+        let mut actions = Vec::new();
+        let mut card = card
+            .map(|c| Card::from_u16((*c as u16) << 1).unwrap())
+            .unwrap_or(Card::Three);
+
+        loop {
+            let mut hand = *self;
+            if hand.play_card(&card) {
+                actions.push((Action::Single(card), hand));
+            }
+            card = match card.plus() {
+                Some(c) => c,
+                None => break,
+            };
+        }
+
+        if actions.is_empty() {
+            actions.push((Action::None, *self));
+        }
+        actions
+    }
+
+    fn play_card(&mut self, card: &Card) -> bool {
+        let mut card = (*card as u64) << 48;
+        for _ in 0..4 {
+            if self.0 & card == card {
+                self.0 &= !card;
+                return true;
+            }
+            card >>= 16;
+        }
+        false
+    }
+
+    fn play_str(&mut self, cards: &str) {
+        for c in cards.chars() {
+            match Card::from_char(c) {
+                Ok(card) => {
+                    self.play_card(&card);
+                }
+                Err(e) => eprintln!("{}", e),
+            }
+        }
+    }
+}
+
+impl Display for Hand {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Hand: ")?;
+        for i in 0..16 {
+            if (self.0 >> i) & 1 == 1 {
+                write!(f, "{}", "34567890JQKA2BR".chars().nth(i).unwrap())?;
+            }
+            if (self.0 >> (i + 16)) & 1 == 1 {
+                write!(f, "{}", "34567890JQKA2  ".chars().nth(i).unwrap())?;
+            }
+            if (self.0 >> (i + 32)) & 1 == 1 {
+                write!(f, "{}", "34567890JQKA2  ".chars().nth(i).unwrap())?;
+            }
+            if (self.0 >> (i + 48)) & 1 == 1 {
+                write!(f, "{}", "34567890JQKA2  ".chars().nth(i).unwrap())?;
+            }
+        }
+
+        Ok(())
     }
 }
 
 /// 牌组
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum Action {
+enum Action {
     /// 不要
     None,
     /// 单张
@@ -137,66 +282,6 @@ impl FromStr for Action {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default)]
-pub struct Hand {
-    kind: u16,
-    amount: [u8; 15],
-}
-
-impl Display for Hand {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut hand = String::new();
-        self.amount.iter().enumerate().for_each(|(i, count)| {
-            let mut count = *count;
-            while count > 0_u8 {
-                hand += CARD_DISPLAY.get(i..i).unwrap();
-                count -= 1;
-            }
-        });
-        write!(f, "{}", hand)
-    }
-}
-
-impl Hand {
-    fn new(cards: &str) -> Result<Hand, Error> {
-        if cards.is_empty() {
-            return Err(Empty);
-        }
-
-        let mut hand = Hand::default();
-        for c in cards.chars() {
-            let card = from_str(c)?;
-            hand.kind |= 1 << card;
-            hand.amount[card as usize] += 1;
-        }
-
-        Ok(hand)
-    }
-
-    /// 出牌
-    pub fn play(&self, action: &Action) -> Vec<(Action, Hand)> {
-        self.single(action)
-    }
-
-    /// 出一张单牌
-    fn single(&self, action: &Action) -> Vec<(Action, Hand)> {
-        let mut actions = Vec::new();
-
-        for i in 0..15 {
-            let mut hand = *self;
-            if self.kind & 1 << i > 0 {
-                hand.amount[i] -= 1;
-                if hand.amount[i] == 0 {
-                    hand.kind ^= 1 << i;
-                }
-                actions.push((Action::Single(i as u8), hand));
-            }
-        }
-
-        actions
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct State {
     /// 当前回合需要应对的牌
@@ -213,7 +298,7 @@ impl Display for State {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut hands = Vec::new();
         for hand in &self.player {
-            hands.push(format!("{}", hand));
+            hands.push(hand.to_string());
         }
         write!(
             f,
@@ -280,7 +365,7 @@ impl State {
             let mut player = state.player.clone();
             for (action, hand) in hand.play(&state.action) {
                 player[turn as usize] = hand;
-                let pass = hand.kind == 0;
+                let pass = hand.0 == 0;
 
                 let child = arena.new_node(State {
                     action,
@@ -317,8 +402,65 @@ impl State {
             }
         }
 
-        arena.get_mut(node_id).unwrap().get_mut().player = Vec::new();
+        if !node_id.is_removed(arena) {
+            arena.get_mut(node_id).unwrap().get_mut().player = Vec::new();
+        }
 
         next_node_id
+    }
+}
+
+pub(crate) fn print_arena(arena: &Arena<State>, node_id: NodeId, parent_id: NodeId) {
+    if node_id.is_removed(arena) {
+        return;
+    }
+    println!(
+        "{} {}: {}",
+        parent_id,
+        node_id,
+        arena.get(node_id).unwrap().get()
+    );
+
+    for child in node_id.children(arena) {
+        print_arena(arena, child, node_id);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_draw() {
+        let hand = Hand::new("345343BR").unwrap();
+        println!("{}", hand);
+        assert_eq!(
+            hand.0,
+            1 | 1 << 1 | 1 << 2 | 1 << 16 | 1 << 17 | 1 << 32 | 1 << 13 | 1 << 14
+        );
+    }
+
+    #[test]
+    fn test_play() {
+        let mut hand = Hand::default();
+        hand.draw_str("343353BR");
+        hand.play_str("4R");
+        println!("{}", hand);
+        assert_eq!(hand.0, 1 << 48 | 1 << 32 | 1 << 16 | 1 << 2 | 1 | 1 << 13);
+    }
+
+    #[test]
+    fn test_state_play() {
+        let state = State::new(vec!["123".to_string(), "234".to_string()], 0).unwrap();
+
+        let mut arena = Arena::new();
+        let root = arena.new_node(state);
+        let mut node_id = Some(root);
+
+        while let Some(n) = node_id {
+            node_id = State::play(&mut arena, n);
+        }
+
+        print_arena(&arena, root);
     }
 }
