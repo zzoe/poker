@@ -322,58 +322,6 @@ impl State {
             pass: false,
         })
     }
-
-    pub fn play(arena: &mut Arena<State>, node_id: NodeId) -> Option<NodeId> {
-        let mut next_node_id = None;
-        let state = arena.get(node_id).unwrap().get();
-        let turn = state.turn;
-
-        // player为空,说明是回溯回来的
-        if state.player.is_empty() {
-            if turn == 0 {
-                let passed_child = node_id
-                    .children(arena)
-                    .find(|n| arena.get(*n).unwrap().get().pass);
-                if passed_child.is_some() {
-                    // 存在已经胜利的分支
-                    arena.get_mut(node_id).unwrap().get_mut().pass = true;
-                    // 删掉其它并列的分支
-                    node_id
-                        .children(arena)
-                        .filter(|n| !arena.get(*n).unwrap().get().pass)
-                        .collect::<Vec<NodeId>>()
-                        .iter()
-                        .for_each(|n| {
-                            println!("Turn:{}, node_id: {}, delete {}", turn, node_id, n);
-                            n.remove_subtree(arena)
-                        });
-
-                    return node_id.ancestors(arena).nth(1);
-                }
-            }
-
-            let next_node_id = node_id
-                .children(arena)
-                .find(|n| !arena.get(*n).unwrap().get().pass);
-
-            return if next_node_id.is_none() {
-                arena.get_mut(node_id).unwrap().get_mut().pass = true;
-                node_id.ancestors(arena).nth(1)
-            } else {
-                next_node_id
-            };
-        }
-
-        if let Some(hand) = state.player.get(turn as usize) {
-            let mut player = state.player.clone();
-        }
-
-        if !node_id.is_removed(arena) {
-            arena.get_mut(node_id).unwrap().get_mut().player = Vec::new();
-        }
-
-        next_node_id
-    }
 }
 
 pub struct Game {
@@ -388,104 +336,181 @@ impl Game {
         Ok(Game { arena, root })
     }
 
-    pub fn play(&mut self) {}
+    pub fn pass(&self) -> bool {
+        self.arena.get(self.root).unwrap().get().pass
+    }
 
-    fn expand_next_condition(&mut self) {}
+    pub fn play(&mut self) {
+        self.play_next(Some(self.root));
+    }
+
+    fn play_next(&mut self, node_id: Option<NodeId>) {
+        if let Some(n) = node_id {
+            let state = self.arena.get(n).unwrap().get();
+            let next_node_id = if !state.player.is_empty() {
+                // node_id: 当前节点有player
+                self.expand(n)
+            } else if state.turn == 0 {
+                // node_id: 当前节点没有player, turn: 0
+                self.expand_player1(n)
+            } else {
+                // node_id: 当前节点没有player, turn != 0
+                self.expand_other_player(n)
+            };
+            self.play_next(next_node_id);
+        }
+    }
+
+    fn expand_player1(&mut self, node_id: NodeId) -> Option<NodeId> {
+        let children = node_id.children(&self.arena).collect::<Vec<NodeId>>();
+        if children.is_empty() {
+            // 没有其它分支，回退到上一次player1的分支
+            return self.rollback_to_last_player1(node_id);
+        }
+
+        return if let Some(passed) = children
+            .iter()
+            .find(|&&n| self.arena.get(n).unwrap().get().pass)
+        {
+            self.delete_siblings(node_id, *passed)
+        } else {
+            Some(children[0])
+        };
+    }
+
+    fn expand_other_player(&mut self, node_id: NodeId) -> Option<NodeId> {
+        let todo = node_id
+            .children(&self.arena)
+            .find(|&n| !self.arena.get(n).unwrap().get().pass);
+        if todo.is_none() {
+            self.arena.get_mut(node_id).unwrap().get_mut().pass = true;
+            node_id.ancestors(&self.arena).nth(1)
+        } else {
+            todo
+        }
+    }
 
     /// 展开下一级节点
     pub fn expand(&mut self, node_id: NodeId) -> Option<NodeId> {
         let mut state = self.arena.get(node_id)?.get().clone();
         let mut next_node_id = None;
         let turn = state.turn as usize;
-
-        if state.player.is_empty() {
-            //回溯
-            return node_id
-                .children(&self.arena)
-                .find(|n| !self.arena.get(*n).unwrap().get().pass);
-        }
-
-        if let Some(hand) = state.player.get(turn) {
-            if hand.0 == 0 {
+        let hand = match state.player.get(turn) {
+            Some(h) => {
+                if h.0 == 0 {
+                    eprintln!("手牌为空？ {}", state);
+                    return None;
+                }
+                h
+            }
+            None => {
+                eprintln!("手牌为空？ {}", state);
                 return None;
             }
+        };
 
-            for (action, hand) in hand.play(&state.action) {
-                state.player[turn] = hand;
-                let pass = hand.0 == 0;
-                let child = self.arena.new_node(State {
-                    action,
-                    player: state.player.clone(),
-                    turn: (state.turn + 1) % state.player.len() as u8,
-                    pass: pass && turn == 0,
-                });
-                node_id.append(child, &mut self.arena);
-                println!(
-                    "parent: {}, child:{}, node:{}",
-                    node_id,
-                    child,
-                    self.arena.get(child).unwrap().get()
-                );
+        for (action, hand) in hand.play(&state.action) {
+            state.player[turn] = hand;
+            let pass = hand.0 == 0;
+            let child = self.arena.new_node(State {
+                action,
+                player: state.player.clone(),
+                turn: (state.turn + 1) % state.player.len() as u8,
+                pass: pass && turn == 0,
+            });
+            node_id.append(child, &mut self.arena);
+            // println!(
+            //     "parent: {}, child:{}, node:{}",
+            //     node_id,
+            //     child,
+            //     self.arena.get(child).unwrap().get()
+            // );
 
-                if pass {
-                    return if turn != 0 {
-                        // 其它玩家已经出光啦,此路不通,找到player1的上一个Action
-                        let last_node_id = node_id
-                            .ancestors(&self.arena)
-                            .find(|n| self.arena.get(*n).unwrap().get().turn == 1)
-                            .unwrap();
-                        // 找到错误的Action的上一个节点，准备从此节点重新选择
-                        next_node_id = last_node_id.ancestors(&self.arena).nth(1);
-                        // 删除错误的Action的子树
-                        println!(
-                            "Turn:{}, node_id: {}, delete subtree of: {}, next: {:?}",
-                            turn, node_id, last_node_id, next_node_id
-                        );
-                        last_node_id.remove_subtree(&mut self.arena);
-                        next_node_id
-                    } else {
-                        // player1已经出光啦, 删除同层的其它出法
-                        self.arena.get_mut(node_id).unwrap().get_mut().pass = true;
-                        next_node_id = node_id.ancestors(&self.arena).nth(1);
-                        child
-                            .preceding_siblings(&self.arena)
-                            .skip(1)
-                            .collect::<Vec<NodeId>>()
-                            .iter()
-                            .for_each(|n| {
-                                println!(
-                                    "Turn:{}, node_id: {}, delete: {}, next: {:?}",
-                                    turn, node_id, n, next_node_id
-                                );
-                                n.remove(&mut self.arena)
-                            });
-                        next_node_id
-                    };
-                }
-                if next_node_id.is_none() {
-                    next_node_id = Some(child);
-                }
+            if pass {
+                self.arena.get_mut(node_id).unwrap().get_mut().player = Vec::new();
+                return if turn != 0 {
+                    self.rollback_to_last_player1(node_id)
+                } else {
+                    self.delete_siblings(node_id, child)
+                };
             }
 
-            self.arena.get_mut(node_id).unwrap().get_mut().player = Vec::new();
+            if next_node_id.is_none() {
+                next_node_id = Some(child);
+            }
         }
+
+        // if !node_id.is_removed(&self.arena) {
+        self.arena.get_mut(node_id).unwrap().get_mut().player = Vec::new();
+        // }
+
         next_node_id
     }
-}
 
-pub(crate) fn print_arena(arena: &Arena<State>, node_id: NodeId, parent_id: NodeId) {
-    if node_id.is_removed(arena) {
-        return;
+    /// 其它玩家已经出光啦,此路不通,找到player1的上一个Action
+    fn rollback_to_last_player1(&mut self, node_id: NodeId) -> Option<NodeId> {
+        let last_node_id = node_id
+            .ancestors(&self.arena)
+            .find(|n| self.arena.get(*n).unwrap().get().turn == 1)?;
+
+        // 找到错误的Action的上一个节点，准备从此节点重新选择
+        let next_node_id = last_node_id.ancestors(&self.arena).nth(1);
+        // 删除错误的Action的子树
+        // println!(
+        //     "node_id: {}, delete subtree of: {}, next: {:?}",
+        //     node_id, last_node_id, next_node_id
+        // );
+        last_node_id.remove_subtree(&mut self.arena);
+        next_node_id
     }
-    println!(
-        "{} {}: {}",
-        parent_id,
-        node_id,
-        arena.get(node_id).unwrap().get()
-    );
 
-    for child in node_id.children(arena) {
-        print_arena(arena, child, node_id);
+    /// player1已经出光啦, 删除同层的其它出法
+    fn delete_siblings(
+        &mut self,
+        current_node_id: NodeId,
+        passed_node_id: NodeId,
+    ) -> Option<NodeId> {
+        passed_node_id
+            .preceding_siblings(&self.arena)
+            .skip(1)
+            .collect::<Vec<NodeId>>()
+            .iter()
+            .for_each(|n| {
+                // println!("passed_node_id: {}, delete sibling: {}", passed_node_id, n);
+                n.remove(&mut self.arena)
+            });
+        passed_node_id
+            .following_siblings(&self.arena)
+            .skip(1)
+            .collect::<Vec<NodeId>>()
+            .iter()
+            .for_each(|n| {
+                // println!("passed_node_id: {}, delete sibling: {}", passed_node_id, n);
+                n.remove(&mut self.arena)
+            });
+
+        self.arena.get_mut(current_node_id).unwrap().get_mut().pass = true;
+        current_node_id.ancestors(&self.arena).nth(1)
+    }
+
+    pub fn print(&self) {
+        self.print_child(self.root, self.root)
+    }
+
+    fn print_child(&self, node_id: NodeId, parent_id: NodeId) {
+        if node_id.is_removed(&self.arena) {
+            return;
+        }
+        println!(
+            "{} {}: {}",
+            parent_id,
+            node_id,
+            self.arena.get(node_id).unwrap().get()
+        );
+
+        for child in node_id.children(&self.arena) {
+            self.print_child(child, node_id);
+        }
     }
 }
 
@@ -514,16 +539,14 @@ mod tests {
 
     #[test]
     fn test_state_play() {
-        let state = State::new(vec!["123".to_string(), "234".to_string()], 0).unwrap();
+        let mut game = Game::new(vec!["123".to_string(), "234".to_string()], 0).unwrap();
+        game.play();
+        game.print();
+        assert!(game.pass());
 
-        let mut arena = Arena::new();
-        let root = arena.new_node(state);
-        let mut node_id = Some(root);
-
-        while let Some(n) = node_id {
-            node_id = State::play(&mut arena, n);
-        }
-
-        print_arena(&arena, root, root);
+        let mut game = Game::new(vec!["34".to_string(), "5".to_string()], 0).unwrap();
+        game.play();
+        game.print();
+        assert!(!game.pass());
     }
 }
