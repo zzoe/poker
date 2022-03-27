@@ -11,7 +11,7 @@ fn main() {
 }
 
 fn play() -> Result<(), Error> {
-    let mut game = Game::new(vec!["123".to_string(), "234".to_string()], 0)?;
+    let mut game = Game::new(vec!["k9987533".to_string(), "qj866".to_string()], 0)?;
     game.play();
     game.print();
 

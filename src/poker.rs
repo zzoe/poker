@@ -24,6 +24,18 @@ enum Card {
     RedJoker = 1 << 14,
 }
 
+enum StraightType {
+    Single,
+    Pair,
+    Triple,
+}
+
+enum Carry {
+    None,
+    Single,
+    Pair,
+}
+
 impl Card {
     fn from_char(c: char) -> Result<Card, Error> {
         match c {
@@ -74,6 +86,14 @@ impl Card {
             Card::from_u16((*self as u16) << 1).ok()
         }
     }
+
+    fn minus(&self) -> Option<Card> {
+        if Card::Three == *self {
+            None
+        } else {
+            Card::from_u16((*self as u16) >> 1).ok()
+        }
+    }
 }
 
 #[derive(Default, Copy, Clone, Debug, PartialEq)]
@@ -112,34 +132,552 @@ impl Hand {
     }
 
     fn play(&self, action: &Action) -> Vec<(Action, Hand)> {
-        let actions = match action {
-            Action::None => self.play_single(None),
+        let mut not_bomb = true;
+        let mut actions = match action {
+            Action::None => self.play_any(),
             Action::Single(card) => self.play_single(Some(card)),
-            _ => vec![(Action::None, *self)],
-        };
-        actions
-    }
-
-    fn play_single(&self, card: Option<&Card>) -> Vec<(Action, Hand)> {
-        let mut actions = Vec::new();
-        let mut card = card
-            .map(|c| Card::from_u16((*c as u16) << 1).unwrap())
-            .unwrap_or(Card::Three);
-
-        loop {
-            let mut hand = *self;
-            if hand.play_card(&card) {
-                actions.push((Action::Single(card), hand));
+            Action::Straight5(c) => self.play_straight(StraightType::Single, Some(c), 5),
+            Action::Straight6(c) => self.play_straight(StraightType::Single, Some(c), 6),
+            Action::Straight7(c) => self.play_straight(StraightType::Single, Some(c), 7),
+            Action::Straight8(c) => self.play_straight(StraightType::Single, Some(c), 8),
+            Action::Straight9(c) => self.play_straight(StraightType::Single, Some(c), 9),
+            Action::Straight10(c) => self.play_straight(StraightType::Single, Some(c), 10),
+            Action::Straight11(c) => self.play_straight(StraightType::Single, Some(c), 11),
+            Action::Straight12 => Vec::new(),
+            Action::Pair(c) => self.play_pair(Some(c)),
+            Action::PairStraight3(c) => self.play_straight(StraightType::Pair, Some(c), 3),
+            Action::PairStraight4(c) => self.play_straight(StraightType::Pair, Some(c), 4),
+            Action::PairStraight5(c) => self.play_straight(StraightType::Pair, Some(c), 5),
+            Action::PairStraight6(c) => self.play_straight(StraightType::Pair, Some(c), 6),
+            Action::PairStraight7(c) => self.play_straight(StraightType::Pair, Some(c), 7),
+            Action::PairStraight8(c) => self.play_straight(StraightType::Pair, Some(c), 8),
+            Action::PairStraight9(c) => self.play_straight(StraightType::Pair, Some(c), 9),
+            Action::PairStraight10(c) => self.play_straight(StraightType::Pair, Some(c), 10),
+            Action::Triple(c) => self.play_triple(Some(c), Carry::None),
+            Action::TripleSingle(c, _) => self.play_triple(Some(c), Carry::Single),
+            Action::TriplePair(c, _) => self.play_triple(Some(c), Carry::Pair),
+            Action::TripleStraight2(c) => self.play_straight(StraightType::Triple, Some(c), 2),
+            Action::TripleStraight2Single(c, _, _) => {
+                self.play_triple_straight(Some(c), Carry::Single, 2)
             }
-            card = match card.plus() {
-                Some(c) => c,
-                None => break,
-            };
+            Action::TripleStraight2Pair(c, _, _) => {
+                self.play_triple_straight(Some(c), Carry::Pair, 2)
+            }
+            Action::TripleStraight3(c) => self.play_straight(StraightType::Triple, Some(c), 3),
+            Action::TripleStraight3Single(c, ..) => {
+                self.play_triple_straight(Some(c), Carry::Single, 3)
+            }
+            Action::TripleStraight3Pair(c, _, _, _) => {
+                self.play_triple_straight(Some(c), Carry::Pair, 3)
+            }
+            Action::TripleStraight4(c) => self.play_straight(StraightType::Triple, Some(c), 4),
+            Action::TripleStraight4Single(c, _, _, _, _) => {
+                self.play_triple_straight(Some(c), Carry::Single, 4)
+            }
+            Action::TripleStraight4Pair(c, _, _, _, _) => {
+                self.play_triple_straight(Some(c), Carry::Pair, 4)
+            }
+            Action::TripleStraight5(c) => self.play_straight(StraightType::Triple, Some(c), 5),
+            Action::TripleStraight5Single(c, _, _, _, _, _) => {
+                self.play_triple_straight(Some(c), Carry::Single, 5)
+            }
+            Action::TripleStraight6(c) => self.play_straight(StraightType::Triple, Some(c), 6),
+            Action::BombSingle(c, _, _) => self.play_bomb_carry(Some(c), Carry::Single),
+            Action::BombPair(c, _, _) => self.play_bomb_carry(Some(c), Carry::Pair),
+            Action::Bomb(c) => {
+                not_bomb = false;
+                self.play_bomb(Some(c))
+            }
+            Action::Rocket => {
+                not_bomb = false;
+                Vec::new()
+            }
+        };
+
+        if not_bomb {
+            actions.extend_from_slice(&self.play_bomb(None));
         }
 
         if actions.is_empty() {
             actions.push((Action::None, *self));
         }
+        actions
+    }
+
+    fn play_any(&self) -> Vec<(Action, Hand)> {
+        let mut actions = Vec::new();
+        //20张牌
+        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Single, 5));
+        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 10));
+        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Pair, 4));
+        //18张牌
+        actions.extend_from_slice(&self.play_straight(StraightType::Triple, None, 6));
+        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 9));
+        //16张牌
+        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Single, 4));
+        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 8));
+        //15张牌
+        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Pair, 3));
+        actions.extend_from_slice(&self.play_straight(StraightType::Triple, None, 5));
+        //14张牌
+        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 7));
+        //12张牌
+        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Single, 3));
+        actions.extend_from_slice(&self.play_straight(StraightType::Triple, None, 4));
+        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 6));
+        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 12));
+        //11张牌
+        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 11));
+        //10张牌
+        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Pair, 2));
+        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 5));
+        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 10));
+        //9张牌
+        actions.extend_from_slice(&self.play_straight(StraightType::Triple, None, 3));
+        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 9));
+        //8张牌
+        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Single, 2));
+        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 4));
+        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 8));
+        //7张牌
+        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 7));
+        //6张牌
+        actions.extend_from_slice(&self.play_straight(StraightType::Triple, None, 2));
+        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 3));
+        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 6));
+        //5张牌
+        actions.extend_from_slice(&self.play_triple(None, Carry::Pair));
+        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 5));
+        //3张牌
+        actions.extend_from_slice(&self.play_triple(None, Carry::None));
+        //4张牌
+        actions.extend_from_slice(&self.play_triple(None, Carry::Single));
+        //2张牌
+        actions.extend_from_slice(&self.play_pair(None));
+        //1张牌
+        actions.extend_from_slice(&self.play_single(None));
+        //8张牌
+        actions.extend_from_slice(&self.play_bomb_carry(None, Carry::Pair));
+        //6张牌
+        actions.extend_from_slice(&self.play_bomb_carry(None, Carry::Single));
+        actions
+    }
+
+    fn play_single(&self, card: Option<&Card>) -> Vec<(Action, Hand)> {
+        let mut actions = Vec::new();
+        let mut card = Self::plus(card);
+
+        loop {
+            if let Some(c) = card {
+                let mut hand = *self;
+                if hand.play_card(&c) {
+                    actions.push((Action::Single(c), hand));
+                }
+                card = c.plus();
+            } else {
+                return actions;
+            }
+        }
+    }
+
+    fn play_straight(
+        &self,
+        st: StraightType,
+        card: Option<&Card>,
+        length: u8,
+    ) -> Vec<(Action, Hand)> {
+        let mut actions = Vec::new();
+        let mut card = Self::plus(card);
+        let mut straight = 0_u16;
+        let mut straight_start = card.unwrap();
+
+        for _ in 0..length {
+            if let Some(c) = card {
+                straight |= c as u16;
+                card = c.plus();
+            } else {
+                return actions;
+            }
+        }
+
+        while straight < Card::Two as u16 {
+            let action = match st {
+                StraightType::Single => self.strait_single(straight, straight_start, length),
+                StraightType::Pair => self.straight_pair(straight as u64, straight_start, length),
+                StraightType::Triple => {
+                    self.straight_triple(straight as u64, straight_start, length)
+                }
+            };
+            actions.extend_from_slice(&*action);
+            straight_start = straight_start.plus().unwrap();
+            straight <<= 1;
+        }
+
+        actions
+    }
+
+    fn strait_single(
+        &self,
+        straight: u16,
+        straight_start: Card,
+        length: u8,
+    ) -> Vec<(Action, Hand)> {
+        let mut actions = Vec::new();
+        let mut hand = *self;
+
+        if hand.0 as u16 & straight == straight {
+            let mut card = straight_start;
+            for _ in 0..length {
+                hand.play_card(&card);
+                card = card.plus().unwrap();
+            }
+            match length {
+                5 => actions.push((Action::Straight5(straight_start), hand)),
+                6 => actions.push((Action::Straight6(straight_start), hand)),
+                7 => actions.push((Action::Straight7(straight_start), hand)),
+                8 => actions.push((Action::Straight8(straight_start), hand)),
+                9 => actions.push((Action::Straight9(straight_start), hand)),
+                10 => actions.push((Action::Straight10(straight_start), hand)),
+                11 => actions.push((Action::Straight11(straight_start), hand)),
+                12 => actions.push((Action::Straight12, hand)),
+                _ => unreachable!(),
+            }
+        }
+        actions
+    }
+
+    fn straight_pair(
+        &self,
+        straight: u64,
+        straight_start: Card,
+        length: u8,
+    ) -> Vec<(Action, Hand)> {
+        let mut actions = Vec::new();
+        let mut hand = *self;
+        let straight = straight | straight << 16;
+
+        if hand.0 & straight == straight {
+            let mut card = straight_start;
+            for _ in 0..length {
+                hand.play_card(&card);
+                hand.play_card(&card);
+                card = card.plus().unwrap();
+            }
+            match length {
+                3 => actions.push((Action::PairStraight3(straight_start), hand)),
+                4 => actions.push((Action::PairStraight4(straight_start), hand)),
+                5 => actions.push((Action::PairStraight5(straight_start), hand)),
+                6 => actions.push((Action::PairStraight6(straight_start), hand)),
+                7 => actions.push((Action::PairStraight7(straight_start), hand)),
+                8 => actions.push((Action::PairStraight8(straight_start), hand)),
+                9 => actions.push((Action::PairStraight9(straight_start), hand)),
+                10 => actions.push((Action::PairStraight10(straight_start), hand)),
+                _ => unreachable!(),
+            }
+        }
+        actions
+    }
+
+    fn straight_triple(
+        &self,
+        straight: u64,
+        straight_start: Card,
+        length: u8,
+    ) -> Vec<(Action, Hand)> {
+        let mut actions = Vec::new();
+        let mut hand = *self;
+        let straight = straight | straight << 16 | straight << 32;
+
+        if hand.0 & straight == straight {
+            let mut card = straight_start;
+            for _ in 0..length {
+                hand.play_card(&card);
+                hand.play_card(&card);
+                hand.play_card(&card);
+                card = card.plus().unwrap();
+            }
+            match length {
+                2 => actions.push((Action::TripleStraight2(straight_start), hand)),
+                3 => actions.push((Action::TripleStraight3(straight_start), hand)),
+                4 => actions.push((Action::TripleStraight4(straight_start), hand)),
+                5 => actions.push((Action::TripleStraight5(straight_start), hand)),
+                6 => actions.push((Action::TripleStraight6(straight_start), hand)),
+                _ => unreachable!(),
+            }
+        }
+        actions
+    }
+
+    fn play_pair(&self, card: Option<&Card>) -> Vec<(Action, Hand)> {
+        let mut actions = Vec::new();
+        let mut card = Self::plus(card);
+
+        loop {
+            if let Some(c) = card {
+                let pair = c as u64 | (c as u64) << 16;
+                let mut hand = *self;
+                if hand.0 & pair == pair {
+                    hand.play_card(&c);
+                    hand.play_card(&c);
+                    actions.push((Action::Pair(c), hand));
+                }
+
+                if c == Card::Two {
+                    return actions;
+                }
+                card = c.plus();
+            } else {
+                return actions;
+            }
+        }
+    }
+
+    fn play_triple(&self, card: Option<&Card>, carry: Carry) -> Vec<(Action, Hand)> {
+        let mut actions = Vec::new();
+        let mut card = Self::plus(card);
+
+        loop {
+            if let Some(c) = card {
+                let triple = c as u64 | (c as u64) << 16 | (c as u64) << 32;
+                let mut hand = *self;
+                if hand.0 & triple == triple {
+                    hand.play_card(&c);
+                    hand.play_card(&c);
+                    hand.play_card(&c);
+                    match carry {
+                        Carry::None => {
+                            actions.push((Action::Triple(c), hand));
+                        }
+                        Carry::Single => {
+                            for (carry, hand) in hand.play_triple_single(&c) {
+                                actions.push((Action::TripleSingle(c, carry), hand))
+                            }
+                        }
+                        Carry::Pair => {
+                            for (carry, hand) in hand.play_triple_pair(&c) {
+                                actions.push((Action::TriplePair(c, carry), hand))
+                            }
+                        }
+                    }
+                }
+
+                if c == Card::Two {
+                    return actions;
+                }
+                card = c.plus();
+            } else {
+                return actions;
+            }
+        }
+    }
+
+    fn play_triple_single(&self, card: &Card) -> Vec<(Card, Hand)> {
+        let mut actions = Vec::new();
+        for (a, h) in self.play_single(None) {
+            if let Action::Single(c) = a {
+                if c != *card {
+                    actions.push((c, h));
+                }
+            }
+        }
+
+        actions
+    }
+
+    fn play_triple_pair(&self, card: &Card) -> Vec<(Card, Hand)> {
+        let mut actions = Vec::new();
+        for (a, h) in self.play_pair(None) {
+            if let Action::Pair(c) = a {
+                if c != *card {
+                    actions.push((c, h));
+                }
+            }
+        }
+
+        actions
+    }
+
+    fn play_triple_straight(
+        &self,
+        card: Option<&Card>,
+        carry: Carry,
+        length: u8,
+    ) -> Vec<(Action, Hand)> {
+        let mut actions = Vec::new();
+        let hand = *self;
+
+        for (action, hand) in hand.play_straight(StraightType::Triple, card, length) {
+            let straight_start = match action {
+                Action::TripleStraight2(c) => c,
+                Action::TripleStraight3(c) => c,
+                Action::TripleStraight4(c) => c,
+                Action::TripleStraight5(c) => c,
+                Action::TripleStraight6(c) => c,
+                _ => unreachable!(),
+            };
+            match carry {
+                Carry::Single => {
+                    let mut carry_actions = Vec::new();
+                    Self::carry_single(&mut carry_actions, Vec::new(), hand, length);
+                    for (a, h) in carry_actions {
+                        match length {
+                            2 => actions.push((
+                                Action::TripleStraight2Single(straight_start, a[0], a[1]),
+                                h,
+                            )),
+                            3 => actions.push((
+                                Action::TripleStraight3Single(straight_start, a[0], a[1], a[2]),
+                                h,
+                            )),
+                            4 => actions.push((
+                                Action::TripleStraight4Single(
+                                    straight_start,
+                                    a[0],
+                                    a[1],
+                                    a[2],
+                                    a[3],
+                                ),
+                                h,
+                            )),
+                            5 => actions.push((
+                                Action::TripleStraight5Single(
+                                    straight_start,
+                                    a[0],
+                                    a[1],
+                                    a[2],
+                                    a[3],
+                                    a[4],
+                                ),
+                                h,
+                            )),
+                            _ => unreachable!(),
+                        }
+                    }
+                }
+                Carry::Pair => {
+                    let mut carry_actions = Vec::new();
+                    Self::carry_pair(&mut carry_actions, Vec::new(), hand, length);
+                    for (a, h) in carry_actions {
+                        match length {
+                            2 => actions
+                                .push((Action::TripleStraight2Pair(straight_start, a[0], a[1]), h)),
+                            3 => actions.push((
+                                Action::TripleStraight3Pair(straight_start, a[0], a[1], a[2]),
+                                h,
+                            )),
+                            4 => actions.push((
+                                Action::TripleStraight4Pair(straight_start, a[0], a[1], a[2], a[3]),
+                                h,
+                            )),
+                            _ => unreachable!(),
+                        }
+                    }
+                }
+                _ => unreachable!(),
+            }
+        }
+
+        actions
+    }
+
+    fn carry_single(
+        actions: &mut Vec<(Vec<Card>, Hand)>,
+        cards: Vec<Card>,
+        hand: Hand,
+        lenght: u8,
+    ) {
+        let mut min_card = None;
+        if let Some(card) = cards.last() {
+            min_card = card.minus();
+        }
+        hand.play_single(min_card.as_ref())
+            .into_iter()
+            .for_each(|(a, h)| {
+                if let Action::Single(c) = a {
+                    let mut cards = cards.clone();
+                    cards.push(c);
+                    if lenght > 1 {
+                        Self::carry_single(actions, cards, h, lenght - 1);
+                    } else {
+                        actions.push((cards, h));
+                    }
+                }
+            });
+    }
+
+    fn carry_pair(actions: &mut Vec<(Vec<Card>, Hand)>, cards: Vec<Card>, hand: Hand, length: u8) {
+        let mut min_card = None;
+        if let Some(card) = cards.last() {
+            min_card = card.minus();
+        }
+        hand.play_pair(min_card.as_ref())
+            .into_iter()
+            .for_each(|(a, h)| {
+                if let Action::Single(c) = a {
+                    let mut cards = cards.clone();
+                    cards.push(c);
+                    if length > 1 {
+                        Self::carry_pair(actions, cards, h, length - 1);
+                    } else {
+                        actions.push((cards, h));
+                    }
+                }
+            });
+    }
+
+    fn play_bomb_carry(&self, card: Option<&Card>, carry: Carry) -> Vec<(Action, Hand)> {
+        let mut actions = Vec::new();
+        for (action, hand) in self.play_bomb(card) {
+            if let Action::Bomb(c) = action {
+                let mut carry_actions = Vec::new();
+                match carry {
+                    Carry::Single => {
+                        Self::carry_single(&mut carry_actions, Vec::new(), hand, 2);
+                        for (a, h) in carry_actions {
+                            actions.push((Action::BombSingle(c, a[0], a[1]), h));
+                        }
+                    }
+                    Carry::Pair => {
+                        Self::carry_pair(&mut carry_actions, Vec::new(), hand, 2);
+                        for (a, h) in carry_actions {
+                            actions.push((Action::BombPair(c, a[0], a[1]), h));
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+            }
+        }
+
+        actions
+    }
+
+    fn play_bomb(&self, card: Option<&Card>) -> Vec<(Action, Hand)> {
+        let mut actions = Vec::new();
+        let mut card = Self::plus(card);
+
+        loop {
+            if let Some(c) = card {
+                let cv = c as u64;
+                let bomb = cv | cv << 16 | cv << 32 | cv << 48;
+                let mut hand = *self;
+
+                if hand.0 & bomb == bomb {
+                    hand.0 &= !bomb;
+                    actions.push((Action::Bomb(c), hand));
+                }
+                card = c.plus();
+            } else {
+                break;
+            }
+        }
+
+        let rocket = Card::BlackJoker as u64 | Card::RedJoker as u64;
+        if self.0 & rocket == rocket {
+            let mut hand = *self;
+            hand.0 &= !rocket;
+            actions.push((Action::Rocket, hand));
+        }
+
         actions
     }
 
@@ -163,6 +701,13 @@ impl Hand {
                 }
                 Err(e) => eprintln!("{}", e),
             }
+        }
+    }
+
+    fn plus(card: Option<&Card>) -> Option<Card> {
+        match card {
+            Some(c) => c.plus(),
+            None => Some(Card::Three),
         }
     }
 }
