@@ -80,7 +80,14 @@ fn play(game: Game, init_turn: bool) {
                 .write_all(format!("我方出牌：{}\n", state.action()).as_ref())
                 .ok();
         } else {
-            let action = read("请输入对方的出牌：(retract-悔一步 retry-重来 new-下一局)\n");
+            let actions = node_id
+                .children(&game.arena)
+                .map(|n| game.arena.get(n).unwrap().get().action())
+                .collect::<Vec<_>>();
+            let action = read(&*format!(
+                "{:?}\n请输入对方的出牌：(retract-悔一步 retry-重来 new-下一局)\n",
+                actions
+            ));
             match &*action {
                 "retract" => {
                     if let Some(n) = node_id.ancestors(&game.arena).nth(2) {
@@ -103,9 +110,6 @@ fn play(game: Game, init_turn: bool) {
             {
                 None => {
                     std::io::stdout().write_all("无效的出牌！\n".as_ref()).ok();
-                    node_id
-                        .children(&game.arena)
-                        .for_each(|n| log::debug!("{}", game.arena.get(n).unwrap().get()));
                     continue;
                 }
                 Some(n) => node_id = n,
