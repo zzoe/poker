@@ -84,23 +84,36 @@ fn play(game: Game, init_turn: bool) {
                 .children(&game.arena)
                 .map(|n| game.arena.get(n).unwrap().get().action())
                 .collect::<Vec<_>>();
-            let action = read(&*format!(
-                "{:?}\n请输入对方的出牌：(retract-悔一步 retry-重来 new-下一局)\n",
+
+            if actions.is_empty() {
+                std::io::stdout().write_all("胜利！\n\n".as_ref()).ok();
+                return;
+            }
+
+            let mut action = read(&*format!(
+                "{:?}\n请输入对方的出牌：(retract-悔一步 retry-重来 new-下一局 quit-退出)\n",
                 actions
-            ));
+            ))
+            .to_uppercase();
+
+            if action.is_empty() {
+                action = "不要".to_string();
+            }
+
             match &*action {
-                "retract" => {
+                "RETRACT" => {
                     if let Some(n) = node_id.ancestors(&game.arena).nth(2) {
                         node_id = n;
                         continue;
                     }
                 }
-                "retry" => {
+                "RETRY" => {
                     node_id = game.root;
                     turn = init_turn;
                     continue;
                 }
-                "new" => return,
+                "NEW" => return,
+                "QUIT" => std::process::exit(0),
                 _ => {}
             }
 
