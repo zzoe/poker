@@ -42,6 +42,6 @@ impl App for MyApp {
     }
 
     fn name(&self) -> &str {
-        "My egui Application"
+        "Poker"
     }
 }
