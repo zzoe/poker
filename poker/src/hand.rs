@@ -497,7 +497,7 @@ impl Hand {
         actions: &mut Vec<(Vec<Card>, Hand)>,
         cards: Vec<Card>,
         hand: Hand,
-        lenght: u8,
+        length: u8,
     ) {
         let mut min_card = None;
         if let Some(card) = cards.last() {
@@ -509,8 +509,8 @@ impl Hand {
                 if let Action::Single(c) = a {
                     let mut cards = cards.clone();
                     cards.push(c);
-                    if lenght > 1 {
-                        Self::carry_single(actions, cards, h, lenght - 1);
+                    if length > 1 {
+                        Self::carry_single(actions, cards, h, length - 1);
                     } else {
                         actions.push((cards, h));
                     }
