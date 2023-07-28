@@ -59,12 +59,14 @@ impl Default for LogCfg {
 #[derive(Deserialize, Serialize)]
 pub(crate) struct WebCfg {
     pub(crate) address: String,
+    pub(crate) assets_path: String,
 }
 
 impl Default for WebCfg {
     fn default() -> Self {
         WebCfg {
             address: "127.0.0.1:8080".to_owned(),
+            assets_path: "dist".to_owned(),
         }
     }
 }
