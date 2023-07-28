@@ -1,6 +1,9 @@
 [workspace]
 members = [
     "poker",
-    "poker_cli",
-    "poker_egui",
+#    "poker_cli",
+#    "poker_egui",
+#    "poker-slint",
+    "poker-web/poker-client",
+    "poker-web/poker-server",
 ]

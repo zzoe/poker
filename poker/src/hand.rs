@@ -221,7 +221,7 @@ impl Hand {
                     self.straight_triple(straight as u64, straight_start, length)
                 }
             };
-            actions.extend_from_slice(&*action);
+            actions.extend_from_slice(&action);
             straight_start = straight_start.plus().unwrap();
             straight <<= 1;
         }

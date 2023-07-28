@@ -48,7 +48,7 @@ impl State {
     fn new(player_str: Vec<String>, turn: u8) -> Result<State, Error> {
         let mut player = Vec::new();
         for s in player_str {
-            player.push(Hand::new(&*s)?);
+            player.push(Hand::new(&s)?);
         }
 
         Ok(State {
