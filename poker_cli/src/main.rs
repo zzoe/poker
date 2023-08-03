@@ -1,7 +1,6 @@
 use std::io::Write;
 
 use anyhow::Result;
-
 use poker::Game;
 
 fn main() {
@@ -117,16 +116,12 @@ fn play(game: Game, init_turn: bool) {
                 _ => {}
             }
 
-            match node_id
-                .children(&game.arena)
-                .find(|child| game.arena.get(*child).unwrap().get().action().eq(&action))
+            let Some(n) = node_id.children(&game.arena).find(|child| game.arena.get(*child).unwrap().get().action().eq(&action)) else
             {
-                None => {
-                    std::io::stdout().write_all("无效的出牌！\n".as_ref()).ok();
-                    continue;
-                }
-                Some(n) => node_id = n,
+                std::io::stdout().write_all("无效的出牌！\n".as_ref()).ok();
+                continue;
             };
+            node_id = n;
         }
         turn = !turn;
     }

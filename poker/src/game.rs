@@ -131,19 +131,15 @@ impl Game {
         let mut state = self.arena.get(node_id)?.get().clone();
         let mut next_node_id = None;
         let turn = state.turn as usize;
-        let hand = match state.player.get(turn) {
-            Some(h) => {
-                if h.0 == 0 {
-                    log::error!("手牌为空？ {}", state);
-                    return None;
-                }
-                h
-            }
-            None => {
-                log::error!("手牌为空？ {}", state);
-                return None;
-            }
+
+        let Some(hand) = state.player.get(turn) else {
+            log::error!("手牌为空？ {}", state);
+            return None;
         };
+        if hand.0 == 0 {
+            log::error!("手牌为空？ {}", state);
+            return None;
+        }
 
         for (action, hand) in hand.play(&state.action) {
             state.player[turn] = hand;
