@@ -19,7 +19,7 @@ pub(crate) async fn start() {
     let route = Route::new()
         .nest(
             "/",
-            StaticFilesEndpoint::new(&cfg.assets_path).show_files_listing(),
+            StaticFilesEndpoint::new(&cfg.assets_path).index_file("index.html"),
         )
         .with(NormalizePath::new(TrailingSlash::Trim))
         .with(Compression::new())

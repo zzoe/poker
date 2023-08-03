@@ -1,4 +1,7 @@
 .idea
+.vscode
 target
+dist
 logs
 Cargo.lock
+config.*.toml
