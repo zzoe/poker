@@ -37,8 +37,11 @@ style = []
 
 # Javascript code file
 script = [
-    "https://cdn.tailwindcss.com",
-    "/assets/tailwind/tailwind.config.js",
+    "https://cdn.jsdelivr.net/npm/@unocss/runtime",
+    "https://cdn.jsdelivr.net/npm/@unocss/runtime/uno.global.js",
+    "/assets/uno/uno.config.js",
+    # "https://cdn.tailwindcss.com",
+    # "/assets/tailwind/tailwind.config.js",
 ]
 
 [web.resource.dev]

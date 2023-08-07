@@ -1,94 +1,68 @@
-use dioxus::html::input_data::keyboard_types;
+use crate::pages::Card;
 use dioxus::prelude::*;
-use dioxus_router::{use_route, use_router};
-use dioxus_toast::ToastInfo;
-use dioxus_web::use_eval;
-use fermi::use_atom_ref;
-use keyboard_types::Code;
+use dioxus_router::use_router;
 
-use crate::components::content::Markdown;
-use crate::components::footer::Footer;
-use crate::TOAST_MANAGER;
 
-pub fn HelloDioxus(cx: Scope) -> Element {
-    let input_name = use_state(cx, String::new);
+pub fn PokerGame(cx: Scope) -> Element {
     let router = use_router(cx);
-    let toast = use_atom_ref(cx, TOAST_MANAGER);
-    let eval = use_eval(cx);
 
     cx.render(rsx! {
-        section { class: "h-screen bg-cover bg-white dark:bg-gray-600",
-            div { class: "flex h-full w-full items-center justify-center container mx-auto px-8",
-                div { class: "max-w-2xl text-center",
-                    h1 { class: "text-3xl sm:text-5xl capitalize tracking-widest text-gray-600 dark:text-white lg:text-6xl",
-                        "Dioxus Starter"
-                    }
-                    p { class: "mt-6 lg:text-lg text-gray-600 dark:text-white",
-                        "Opinionated Dioxus Starter Template"
-                    }
-                    div { class: "mt-8 flex flex-col space-y-3 sm:-mx-2 sm:flex-row sm:justify-center sm:space-y-0",
-                        input {
-                            r#type: "text",
-                            class: "rounded-md border border-transparent bg-gray-800 dark:bg-white/20 px-4 py-2 text-white placeholder-white backdrop-blur-sm focus:border-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-40 sm:mx-2",
-                            placeholder: "What's your name ?",
-                            oninput: move |e| input_name.set(e.value.clone()),
-                            onkeydown: move |e| {
-                                if e.code() == Code::Enter {
-                                    eval("document.getElementById('submit-button').click()");
-                                }
-                            },
-                            value: "{input_name}"
-                        }
-                        button {
-                            id: "submit-button",
-                            class: "transform rounded-md bg-blue-700 px-8 py-2 text-sm font-medium capitalize tracking-wide text-white transition-colors duration-200 hover:bg-blue-600 focus:bg-blue-600 focus:outline-none sm:mx-2",
-                            onclick: move |_| {
-                                let name = input_name.get();
-                                if !name.is_empty() {
-                                    router.navigate_to(&format!("/hi/{name}"));
-                                } else {
-                                    toast.write().popup(ToastInfo::warning("Empty input box", "Dioxus Toast"));
-                                }
-                            },
-                            "Go"
-                        }
-                    }
-                    Footer {}
+        div { class: "flex flex-col space-y-6",
+            div { class: "flex flex-row space-x-1 h-16 items-center",
+                label { "对方手牌：" }
+                div {
+                    class: "flex shadow grow h-full items-center px-1",
+                    id: "hands_of_player1",
+                    onclick: |_| {
+                        router.navigate_to("/cards");
+                        log::info!("sdf");
+                    },
+                    Card { value: 1 }
+                    Card { value: 2 }
                 }
+                input {
+                    class: "peer/player1",
+                    id: "turn_of_player1",
+                    r#type: "radio",
+                    name: "turn"
+                }
+                label { r#for: "turn_of_player1", "对方先手" }
             }
-        }
-    })
-}
 
-pub fn SayHi(cx: Scope) -> Element {
-    let route = use_route(cx);
-    let name = route.segment("name").unwrap();
-    let name = urlencoding::decode(name).expect("UTF-8").to_string();
-    cx.render(rsx! {
-        section { class: "h-screen bg-cover bg-white dark:bg-gray-600",
-            div { class: "flex h-full w-full items-center justify-center container mx-auto px-8",
-                div { class: "max-w-2xl text-center",
-                    h1 { class: "text-3xl sm:text-5xl capitalize tracking-widest dark:text-white lg:text-6xl",
-                        "Hi, {name}"
-                    }
-                    Footer {}
+            div { class: "flex flex-row space-x-1 h-16 items-center",
+                label { "我方手牌：" }
+                div {
+                    class: "flex shadow grow h-full items-center px-1",
+                    id: "hands_of_player2",
+                    onclick: |_| {
+                        router.navigate_to("/cards");
+                    },
+                    Card { value: 2 }
+                    Card { value: 2 }
+                    Card { value: 2 }
+                    Card { value: 2 }
                 }
+                input {
+                    class: "peer/player2",
+                    id: "turn_of_player2",
+                    r#type: "radio",
+                    name: "turn",
+                    checked: true
+                }
+                label { r#for: "turn_of_player2", "我方先手" }
             }
-        }
-    })
-}
 
-pub fn About(cx: Scope) -> Element {
-    let content = include_str!("../markdown/readme.md");
-    cx.render(rsx! {
-        div { class: "dark:bg-gray-600",
-            br {}
-            div { class: "md:flex md:justify-center",
-                div { class: "block p-8 rounded-lg shadow-2xl bg-white dark:bg-gray-700",
-                    Markdown { class: "dark:text-white", content: content.to_string() }
+            div { class: "flex justify-center space-x-8",
+                button { class: "w-32 py-2 px-4 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75",
+                    "清空"
+                }
+                button { class: "w-32 py-2 px-4 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75",
+                    "开始/重开"
+                }
+                button { class: "w-32 py-2 px-4 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75",
+                    "悔一步"
                 }
             }
-            Footer {}
         }
     })
 }

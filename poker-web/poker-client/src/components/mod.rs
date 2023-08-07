@@ -1,2 +1,3 @@
-pub mod content;
-pub mod footer;
+mod footer;
+
+pub use footer::Footer;
