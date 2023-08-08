@@ -45,10 +45,10 @@ impl Display for State {
 }
 
 impl State {
-    fn new(player_str: Vec<String>, turn: u8) -> Result<State, Error> {
+    fn new(player_hand: Vec<impl Into<Hand>>, turn: u8) -> Result<State, Error> {
         let mut player = Vec::new();
-        for s in player_str {
-            player.push(Hand::new(&s)?);
+        for s in player_hand {
+            player.push(s.into());
         }
 
         Ok(State {
@@ -70,9 +70,9 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(player_str: Vec<String>, turn: u8) -> Result<Self, Error> {
+    pub fn new(player_hand: Vec<impl Into<Hand>>, turn: u8) -> Result<Self, Error> {
         let mut arena = Arena::new();
-        let root = arena.new_node(State::new(player_str, turn)?);
+        let root = arena.new_node(State::new(player_hand, turn)?);
         Ok(Game { arena, root })
     }
 
@@ -254,12 +254,12 @@ mod tests {
 
     #[test]
     fn test_state_play() {
-        let mut game = Game::new(vec!["123".to_string(), "234".to_string()], 0).unwrap();
+        let mut game = Game::new(vec!["123", "234"], 0).unwrap();
         game.play();
         game.print();
         assert!(game.pass());
 
-        let mut game = Game::new(vec!["34".to_string(), "5".to_string()], 0).unwrap();
+        let mut game = Game::new(vec!["34", "5"], 0).unwrap();
         game.play();
         game.print();
         assert!(!game.pass());

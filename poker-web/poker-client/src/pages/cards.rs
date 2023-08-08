@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
 
-/// 用u64表示一副牌，每16位代表一个花色，分别是桃仙梅方；用后15位分别表示大王、小王、2、A、K、Q、J、10、9、8、7、6、5、4、3
 pub struct DeckOfCards(u64);
 
 impl Default for DeckOfCards{

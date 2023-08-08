@@ -24,7 +24,7 @@ fn interactive() -> Result<()> {
             .parse::<bool>()
             .unwrap_or_default();
 
-        let mut game = match poker::Game::new(vec![hand_own, hand_opponent], turn as u8) {
+        let mut game = match poker::Game::new(vec![hand_own.as_str(), hand_opponent.as_str()], turn as u8) {
             Ok(game) => game,
             Err(e) => {
                 log::error!("{}", e);

@@ -3,22 +3,63 @@ use std::fmt::Display;
 use crate::action::Action;
 use crate::card::Card;
 use crate::game::{Carry, StraightType};
-use crate::Error;
 
 #[derive(Default, Copy, Clone, Debug, PartialEq)]
-pub(crate) struct Hand(pub(crate) u64);
+pub struct Hand(pub(crate) u64);
+
+/// 用u64表示一副牌，每16位代表一个花色，分别是桃仙梅方；用后15位分别表示大王、小王、2、A、K、Q、J、10、9、8、7、6、5、4、3
+pub const DECK_OF_CARDS: u64 = 0b0001111111111111000111111111111100011111111111110111111111111111;
+
+impl From<&str> for Hand {
+    fn from(value: &str) -> Self {
+        let mut hand = Hand(0);
+        for c in value.chars() {
+            match Card::from_char(c) {
+                Ok(card) => hand.draw_card(card),
+                Err(e) => log::error!("{}", e),
+            }
+        }
+        hand
+    }
+}
+
+impl From<u64> for Hand {
+    fn from(value: u64) -> Self {
+        Hand(DECK_OF_CARDS & value)
+    }
+}
 
 impl Hand {
-    pub(crate) fn new(cards: &str) -> Result<Hand, Error> {
-        if cards.is_empty() {
-            return Err(Error::Empty);
+    /// 手牌整理，高位的1跟低位的0互换
+    fn arrange(&self) -> Hand {
+        let mut segments = [
+            self.0 & 0xFFFF,
+            (self.0 >> 16) & 0xFFFF,
+            (self.0 >> 32) & 0xFFFF,
+            (self.0 >> 48) & 0xFFFF,
+        ];
+
+        for i in (1..4).rev() {
+            for j in 0..i {
+                if segments[i] == 0 {
+                    break;
+                }
+
+                //相同的位是0，不同的位是1
+                let different = segments[i] ^ segments[j];
+                //相同的位是1，不同的位是0
+                let identical = !different;
+                // 相同的位保持不变，不同的位设为0
+                segments[i] &= identical;
+                // 相同的位保持不变，不同的位设为1
+                segments[j] |= different;
+            }
         }
 
-        let mut hand = Hand(0);
-        hand.draw_str(cards);
-        Ok(hand)
+        Hand(segments.iter().rev().fold(0, |v, s| s | (v << 16)))
     }
 
+    /// 抓牌，不考虑花色，优先放在低位
     fn draw_card(&mut self, card: Card) {
         let mut card = card as u64;
         for _ in 0..4 {
@@ -27,16 +68,6 @@ impl Hand {
                 break;
             }
             card <<= 16;
-        }
-    }
-
-    /// 摸牌
-    fn draw_str(&mut self, cards: &str) {
-        for c in cards.chars() {
-            match Card::from_char(c) {
-                Ok(card) => self.draw_card(card),
-                Err(e) => log::error!("{}", e),
-            }
         }
     }
 
@@ -181,15 +212,15 @@ impl Hand {
         let mut card = Self::plus(card);
 
         loop {
-            if let Some(c) = card {
-                let mut hand = *self;
-                if hand.play_card(&c) {
-                    actions.push((Action::Single(c), hand));
-                }
-                card = c.plus();
-            } else {
+            let Some(c) = card else{
                 return actions;
+            };
+
+            let mut hand = *self;
+            if hand.play_card(&c) {
+                actions.push((Action::Single(c), hand));
             }
+            card = c.plus();
         }
     }
 
@@ -205,12 +236,9 @@ impl Hand {
         let mut straight_start = card.unwrap();
 
         for _ in 0..length {
-            if let Some(c) = card {
-                straight |= c as u16;
-                card = c.plus();
-            } else {
-                return actions;
-            }
+            let Some(c) = card else{ return actions };
+            straight |= c as u16;
+            card = c.plus();
         }
 
         while straight < Card::Two as u16 {
@@ -603,10 +631,7 @@ impl Hand {
     }
 
     fn plus(card: Option<&Card>) -> Option<Card> {
-        match card {
-            Some(c) => c.plus(),
-            None => Some(Card::Three),
-        }
+        card.and_then(|c| c.plus()).or(Some(Card::Three))
     }
 }
 
@@ -638,7 +663,7 @@ mod tests {
 
     #[test]
     fn test_draw() {
-        let hand = Hand::new("345343BR").unwrap();
+        let hand = Hand::from("345343BR");
         log::debug!("{}", hand);
         assert_eq!(
             hand.0,
@@ -648,8 +673,7 @@ mod tests {
 
     #[test]
     fn test_play() {
-        let mut hand = Hand::default();
-        hand.draw_str("343353BR");
+        let mut hand = Hand::from("343353BR");
         hand.play_card(&Card::Four);
         hand.play_card(&Card::RedJoker);
         log::debug!("{}", hand);
