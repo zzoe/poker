@@ -353,63 +353,58 @@ impl Hand {
         let mut actions = Vec::new();
         let mut card = Self::plus(card);
 
-        loop {
-            if let Some(c) = card {
-                let pair = c as u64 | (c as u64) << 16;
-                let mut hand = *self;
-                if hand.0 & pair == pair {
-                    hand.play_card(&c);
-                    hand.play_card(&c);
-                    actions.push((Action::Pair(c), hand));
-                }
+        while let Some(c) = card {
+            let pair = c as u64 | (c as u64) << 16;
+            let mut hand = *self;
+            if hand.0 & pair == pair {
+                hand.play_card(&c);
+                hand.play_card(&c);
+                actions.push((Action::Pair(c), hand));
+            }
 
-                if c == Card::Two {
-                    return actions;
-                }
-                card = c.plus();
-            } else {
+            if c == Card::Two {
                 return actions;
             }
+            card = c.plus();
         }
+        return actions;
     }
 
     fn play_triple(&self, card: Option<&Card>, carry: Carry) -> Vec<(Action, Hand)> {
         let mut actions = Vec::new();
         let mut card = Self::plus(card);
 
-        loop {
-            if let Some(c) = card {
-                let triple = c as u64 | (c as u64) << 16 | (c as u64) << 32;
-                let mut hand = *self;
-                if hand.0 & triple == triple {
-                    hand.play_card(&c);
-                    hand.play_card(&c);
-                    hand.play_card(&c);
-                    match carry {
-                        Carry::None => {
-                            actions.push((Action::Triple(c), hand));
+        while let Some(c) = card {
+            let triple = c as u64 | (c as u64) << 16 | (c as u64) << 32;
+            let mut hand = *self;
+            if hand.0 & triple == triple {
+                hand.play_card(&c);
+                hand.play_card(&c);
+                hand.play_card(&c);
+                match carry {
+                    Carry::None => {
+                        actions.push((Action::Triple(c), hand));
+                    }
+                    Carry::Single => {
+                        for (carry, hand) in hand.play_triple_single(&c) {
+                            actions.push((Action::TripleSingle(c, carry), hand))
                         }
-                        Carry::Single => {
-                            for (carry, hand) in hand.play_triple_single(&c) {
-                                actions.push((Action::TripleSingle(c, carry), hand))
-                            }
-                        }
-                        Carry::Pair => {
-                            for (carry, hand) in hand.play_triple_pair(&c) {
-                                actions.push((Action::TriplePair(c, carry), hand))
-                            }
+                    }
+                    Carry::Pair => {
+                        for (carry, hand) in hand.play_triple_pair(&c) {
+                            actions.push((Action::TriplePair(c, carry), hand))
                         }
                     }
                 }
+            }
 
-                if c == Card::Two {
-                    return actions;
-                }
-                card = c.plus();
-            } else {
+            if c == Card::Two {
                 return actions;
             }
+            card = c.plus();
         }
+
+        return actions;
     }
 
     fn play_triple_single(&self, card: &Card) -> Vec<(Card, Hand)> {
