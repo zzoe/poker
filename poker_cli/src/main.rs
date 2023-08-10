@@ -76,12 +76,12 @@ fn play(game: Game, init_turn: bool) {
             }
             let state = game.arena.get(node_id).unwrap().get();
             std::io::stdout()
-                .write_all(format!("我方出牌：{}\n", state.action()).as_ref())
+                .write_all(format!("我方出牌：{}\n", state.action_string()).as_ref())
                 .ok();
         } else {
             let actions = node_id
                 .children(&game.arena)
-                .map(|n| game.arena.get(n).unwrap().get().action())
+                .map(|n| game.arena.get(n).unwrap().get().action_string())
                 .collect::<Vec<_>>();
 
             if actions.is_empty() {
@@ -116,7 +116,7 @@ fn play(game: Game, init_turn: bool) {
                 _ => {}
             }
 
-            let Some(n) = node_id.children(&game.arena).find(|child| game.arena.get(*child).unwrap().get().action().eq(&action)) else
+            let Some(n) = node_id.children(&game.arena).find(|child| game.arena.get(*child).unwrap().get().action_string().eq(&action)) else
             {
                 std::io::stdout().write_all("无效的出牌！\n".as_ref()).ok();
                 continue;

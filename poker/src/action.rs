@@ -85,104 +85,102 @@ pub(crate) enum Action {
     Rocket,
 }
 
-impl Display for Action {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Action::None => "不要".to_string(),
-            Action::Single(c) => c.to_string(),
+impl Into<Vec<Card>> for Action {
+    fn into(self) -> Vec<Card> {
+        match self {
+            Action::None => Vec::new(),
+            Action::Single(c) => vec![c],
             Action::Straight5(c) => {
-                straight_to_string(StraightType::Single, c, 5, Carry::None, Vec::new())
+                straight_cards(StraightType::Single, c, 5, Carry::None, Vec::new())
             }
             Action::Straight6(c) => {
-                straight_to_string(StraightType::Single, c, 6, Carry::None, Vec::new())
+                straight_cards(StraightType::Single, c, 6, Carry::None, Vec::new())
             }
             Action::Straight7(c) => {
-                straight_to_string(StraightType::Single, c, 7, Carry::None, Vec::new())
+                straight_cards(StraightType::Single, c, 7, Carry::None, Vec::new())
             }
             Action::Straight8(c) => {
-                straight_to_string(StraightType::Single, c, 8, Carry::None, Vec::new())
+                straight_cards(StraightType::Single, c, 8, Carry::None, Vec::new())
             }
             Action::Straight9(c) => {
-                straight_to_string(StraightType::Single, c, 9, Carry::None, Vec::new())
+                straight_cards(StraightType::Single, c, 9, Carry::None, Vec::new())
             }
             Action::Straight10(c) => {
-                straight_to_string(StraightType::Single, c, 10, Carry::None, Vec::new())
+                straight_cards(StraightType::Single, c, 10, Carry::None, Vec::new())
             }
             Action::Straight11(c) => {
-                straight_to_string(StraightType::Single, c, 11, Carry::None, Vec::new())
+                straight_cards(StraightType::Single, c, 11, Carry::None, Vec::new())
             }
-            Action::Straight12 => straight_to_string(
+            Action::Straight12 => straight_cards(
                 StraightType::Single,
-                &Card::Three,
+                Card::Three,
                 12,
                 Carry::None,
                 Vec::new(),
             ),
-            Action::Pair(c) => {
-                straight_to_string(StraightType::Pair, c, 1, Carry::None, Vec::new())
-            }
+            Action::Pair(c) => straight_cards(StraightType::Pair, c, 1, Carry::None, Vec::new()),
             Action::PairStraight3(c) => {
-                straight_to_string(StraightType::Pair, c, 3, Carry::None, Vec::new())
+                straight_cards(StraightType::Pair, c, 3, Carry::None, Vec::new())
             }
             Action::PairStraight4(c) => {
-                straight_to_string(StraightType::Pair, c, 4, Carry::None, Vec::new())
+                straight_cards(StraightType::Pair, c, 4, Carry::None, Vec::new())
             }
             Action::PairStraight5(c) => {
-                straight_to_string(StraightType::Pair, c, 5, Carry::None, Vec::new())
+                straight_cards(StraightType::Pair, c, 5, Carry::None, Vec::new())
             }
             Action::PairStraight6(c) => {
-                straight_to_string(StraightType::Pair, c, 6, Carry::None, Vec::new())
+                straight_cards(StraightType::Pair, c, 6, Carry::None, Vec::new())
             }
             Action::PairStraight7(c) => {
-                straight_to_string(StraightType::Pair, c, 7, Carry::None, Vec::new())
+                straight_cards(StraightType::Pair, c, 7, Carry::None, Vec::new())
             }
             Action::PairStraight8(c) => {
-                straight_to_string(StraightType::Pair, c, 8, Carry::None, Vec::new())
+                straight_cards(StraightType::Pair, c, 8, Carry::None, Vec::new())
             }
             Action::PairStraight9(c) => {
-                straight_to_string(StraightType::Pair, c, 9, Carry::None, Vec::new())
+                straight_cards(StraightType::Pair, c, 9, Carry::None, Vec::new())
             }
             Action::PairStraight10(c) => {
-                straight_to_string(StraightType::Pair, c, 10, Carry::None, Vec::new())
+                straight_cards(StraightType::Pair, c, 10, Carry::None, Vec::new())
             }
             Action::Triple(c) => {
-                straight_to_string(StraightType::Triple, c, 1, Carry::None, Vec::new())
+                straight_cards(StraightType::Triple, c, 1, Carry::None, Vec::new())
             }
             Action::TripleSingle(c1, c2) => {
-                straight_to_string(StraightType::Triple, c1, 1, Carry::Single, vec![c2])
+                straight_cards(StraightType::Triple, c1, 1, Carry::Single, vec![c2])
             }
             Action::TriplePair(c1, c2) => {
-                straight_to_string(StraightType::Triple, c1, 1, Carry::Pair, vec![c2])
+                straight_cards(StraightType::Triple, c1, 1, Carry::Pair, vec![c2])
             }
             Action::TripleStraight2(c) => {
-                straight_to_string(StraightType::Triple, c, 2, Carry::None, Vec::new())
+                straight_cards(StraightType::Triple, c, 2, Carry::None, Vec::new())
             }
             Action::TripleStraight2Single(c1, c2, c3) => {
-                straight_to_string(StraightType::Triple, c1, 2, Carry::Single, vec![c2, c3])
+                straight_cards(StraightType::Triple, c1, 2, Carry::Single, vec![c2, c3])
             }
             Action::TripleStraight2Pair(c1, c2, c3) => {
-                straight_to_string(StraightType::Triple, c1, 2, Carry::Pair, vec![c2, c3])
+                straight_cards(StraightType::Triple, c1, 2, Carry::Pair, vec![c2, c3])
             }
             Action::TripleStraight3(c) => {
-                straight_to_string(StraightType::Triple, c, 3, Carry::None, Vec::new())
+                straight_cards(StraightType::Triple, c, 3, Carry::None, Vec::new())
             }
             Action::TripleStraight3Single(c1, c2, c3, c4) => {
-                straight_to_string(StraightType::Triple, c1, 3, Carry::Single, vec![c2, c3, c4])
+                straight_cards(StraightType::Triple, c1, 3, Carry::Single, vec![c2, c3, c4])
             }
             Action::TripleStraight3Pair(c1, c2, c3, c4) => {
-                straight_to_string(StraightType::Triple, c1, 3, Carry::Pair, vec![c2, c3, c4])
+                straight_cards(StraightType::Triple, c1, 3, Carry::Pair, vec![c2, c3, c4])
             }
             Action::TripleStraight4(c) => {
-                straight_to_string(StraightType::Triple, c, 4, Carry::None, Vec::new())
+                straight_cards(StraightType::Triple, c, 4, Carry::None, Vec::new())
             }
-            Action::TripleStraight4Single(c1, c2, c3, c4, c5) => straight_to_string(
+            Action::TripleStraight4Single(c1, c2, c3, c4, c5) => straight_cards(
                 StraightType::Triple,
                 c1,
                 4,
                 Carry::Single,
                 vec![c2, c3, c4, c5],
             ),
-            Action::TripleStraight4Pair(c1, c2, c3, c4, c5) => straight_to_string(
+            Action::TripleStraight4Pair(c1, c2, c3, c4, c5) => straight_cards(
                 StraightType::Triple,
                 c1,
                 4,
@@ -190,9 +188,9 @@ impl Display for Action {
                 vec![c2, c3, c4, c5],
             ),
             Action::TripleStraight5(c) => {
-                straight_to_string(StraightType::Triple, c, 5, Carry::None, Vec::new())
+                straight_cards(StraightType::Triple, c, 5, Carry::None, Vec::new())
             }
-            Action::TripleStraight5Single(c1, c2, c3, c4, c5, c6) => straight_to_string(
+            Action::TripleStraight5Single(c1, c2, c3, c4, c5, c6) => straight_cards(
                 StraightType::Triple,
                 c1,
                 5,
@@ -200,36 +198,34 @@ impl Display for Action {
                 vec![c2, c3, c4, c5, c6],
             ),
             Action::TripleStraight6(c) => {
-                straight_to_string(StraightType::Triple, c, 6, Carry::None, Vec::new())
+                straight_cards(StraightType::Triple, c, 6, Carry::None, Vec::new())
             }
-            Action::BombSingle(c1, c2, c3) => format!("{}{}{}{}{}{}", c1, c1, c1, c1, c2, c3),
-            Action::BombPair(c1, c2, c3) => {
-                format!("{}{}{}{}{}{}{}{}", c1, c1, c1, c1, c2, c2, c3, c3)
-            }
-            Action::Bomb(c) => format!("{}{}{}{}", c, c, c, c),
-            Action::Rocket => "BR".to_string(),
-        };
-        write!(f, "{}", s)
+            Action::BombSingle(c1, c2, c3) => vec![c1, c1, c1, c1, c2, c3],
+            Action::BombPair(c1, c2, c3) => vec![c1, c1, c1, c1, c2, c2, c3, c3],
+            Action::Bomb(c) => vec![c, c, c, c],
+            Action::Rocket => vec![Card::BlackJoker, Card::RedJoker],
+        }
     }
 }
 
-fn straight_to_string(
+fn straight_cards(
     st: StraightType,
-    card: &Card,
+    card: Card,
     length: u8,
     carry: Carry,
-    carry_cards: Vec<&Card>,
-) -> String {
-    let mut s = String::new();
-    let mut card = *card;
+    carry_cards: Vec<Card>,
+) -> Vec<Card> {
+    let mut cards = Vec::new();
+    let mut card = card;
+    let count = match st {
+        StraightType::Single => 1_u8,
+        StraightType::Pair => 2,
+        StraightType::Triple => 3,
+    };
+
     for _ in 0..length {
-        let count = match st {
-            StraightType::Single => 1_u8,
-            StraightType::Pair => 2,
-            StraightType::Triple => 3,
-        };
         for _ in 0..count {
-            s.push_str(&card.to_string());
+            cards.push(card);
         }
         card = card.plus().unwrap();
     }
@@ -238,15 +234,32 @@ fn straight_to_string(
         Carry::None => {}
         Carry::Single => {
             for c in carry_cards {
-                s.push_str(&c.to_string());
+                cards.push(c);
             }
         }
         Carry::Pair => {
             for c in carry_cards {
-                s.push_str(&c.to_string());
-                s.push_str(&c.to_string());
+                cards.push(c);
+                cards.push(c);
             }
         }
     }
-    s
+    cards
+}
+
+impl Display for Action {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let a: Vec<Card> = (*self).into();
+        if a.is_empty() {
+            return write!(f, "不要");
+        }
+        let s = a
+            .iter()
+            .map(|c| c.to_string())
+            .fold(String::new(), |mut a, b| {
+                a.push_str(&b);
+                a
+            });
+        write!(f, "{s}")
+    }
 }

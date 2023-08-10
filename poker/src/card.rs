@@ -2,7 +2,7 @@ use crate::Error;
 use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub(crate) enum Card {
+pub enum Card {
     Three = 1,
     Four = 1 << 1,
     Five = 1 << 2,

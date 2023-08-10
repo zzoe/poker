@@ -3,6 +3,7 @@ use std::fmt::{Display, Formatter};
 use indextree::{Arena, NodeId};
 
 use crate::action::Action;
+use crate::card::Card;
 use crate::hand::Hand;
 use crate::Error;
 
@@ -59,8 +60,12 @@ impl State {
         })
     }
 
-    pub fn action(&self) -> String {
+    pub fn action_string(&self) -> String {
         self.action.to_string()
+    }
+
+    pub fn action_cards(&self) -> Vec<Card>{
+        self.action.into()
     }
 }
 
@@ -141,7 +146,7 @@ impl Game {
             return None;
         }
 
-        for (action, hand) in hand.play(&state.action) {
+        for (action, hand) in hand.follow(&state.action) {
             state.player[turn] = hand;
             let pass = hand.0 == 0;
             let child = self.arena.new_node(State {

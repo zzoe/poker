@@ -4,11 +4,11 @@ use crate::action::Action;
 use crate::card::Card;
 use crate::game::{Carry, StraightType};
 
-#[derive(Default, Copy, Clone, Debug, PartialEq)]
-pub struct Hand(pub(crate) u64);
-
 /// 用u64表示一副牌，每16位代表一个花色，分别是桃仙梅方；用后15位分别表示大王、小王、2、A、K、Q、J、10、9、8、7、6、5、4、3
 pub const DECK_OF_CARDS: u64 = 0b0001111111111111000111111111111100011111111111110111111111111111;
+
+#[derive(Default, Copy, Clone, Debug, PartialEq)]
+pub struct Hand(pub u64);
 
 impl From<&str> for Hand {
     fn from(value: &str) -> Self {
@@ -25,7 +25,7 @@ impl From<&str> for Hand {
 
 impl From<u64> for Hand {
     fn from(value: u64) -> Self {
-        Hand(DECK_OF_CARDS & value)
+        Hand(DECK_OF_CARDS & value).arrange()
     }
 }
 
@@ -71,66 +71,80 @@ impl Hand {
         }
     }
 
-    pub(crate) fn play(&self, action: &Action) -> Vec<(Action, Hand)> {
+    /// 打出一张牌
+    pub fn play_card(&mut self, card: Card) -> Option<u64> {
+        let mut card = (card as u64) << 48;
+        for _ in 0..4 {
+            if self.0 & card == card {
+                self.0 &= !card;
+                return Some(card);
+            }
+            card >>= 16;
+        }
+        None
+    }
+
+    /// “管上”指定牌组的所有方案
+    pub(crate) fn follow(&self, action: &Action) -> Vec<(Action, Hand)> {
         let mut own_round = false;
         let mut not_bomb = true;
         let mut actions = match action {
             Action::None => {
                 own_round = true;
-                self.play_any()
+                self.follow_any()
             }
-            Action::Single(card) => self.play_single(Some(card)),
-            Action::Straight5(c) => self.play_straight(StraightType::Single, Some(c), 5),
-            Action::Straight6(c) => self.play_straight(StraightType::Single, Some(c), 6),
-            Action::Straight7(c) => self.play_straight(StraightType::Single, Some(c), 7),
-            Action::Straight8(c) => self.play_straight(StraightType::Single, Some(c), 8),
-            Action::Straight9(c) => self.play_straight(StraightType::Single, Some(c), 9),
-            Action::Straight10(c) => self.play_straight(StraightType::Single, Some(c), 10),
-            Action::Straight11(c) => self.play_straight(StraightType::Single, Some(c), 11),
+            Action::Single(card) => self.follow_single(Some(card)),
+            Action::Straight5(c) => self.follow_straight(StraightType::Single, Some(c), 5),
+            Action::Straight6(c) => self.follow_straight(StraightType::Single, Some(c), 6),
+            Action::Straight7(c) => self.follow_straight(StraightType::Single, Some(c), 7),
+            Action::Straight8(c) => self.follow_straight(StraightType::Single, Some(c), 8),
+            Action::Straight9(c) => self.follow_straight(StraightType::Single, Some(c), 9),
+            Action::Straight10(c) => self.follow_straight(StraightType::Single, Some(c), 10),
+            Action::Straight11(c) => self.follow_straight(StraightType::Single, Some(c), 11),
             Action::Straight12 => Vec::new(),
-            Action::Pair(c) => self.play_pair(Some(c)),
-            Action::PairStraight3(c) => self.play_straight(StraightType::Pair, Some(c), 3),
-            Action::PairStraight4(c) => self.play_straight(StraightType::Pair, Some(c), 4),
-            Action::PairStraight5(c) => self.play_straight(StraightType::Pair, Some(c), 5),
-            Action::PairStraight6(c) => self.play_straight(StraightType::Pair, Some(c), 6),
-            Action::PairStraight7(c) => self.play_straight(StraightType::Pair, Some(c), 7),
-            Action::PairStraight8(c) => self.play_straight(StraightType::Pair, Some(c), 8),
-            Action::PairStraight9(c) => self.play_straight(StraightType::Pair, Some(c), 9),
-            Action::PairStraight10(c) => self.play_straight(StraightType::Pair, Some(c), 10),
-            Action::Triple(c) => self.play_triple(Some(c), Carry::None),
-            Action::TripleSingle(c, _) => self.play_triple(Some(c), Carry::Single),
-            Action::TriplePair(c, _) => self.play_triple(Some(c), Carry::Pair),
-            Action::TripleStraight2(c) => self.play_straight(StraightType::Triple, Some(c), 2),
+            Action::Pair(c) => self.follow_pair(Some(c)),
+            Action::PairStraight3(c) => self.follow_straight(StraightType::Pair, Some(c), 3),
+            Action::PairStraight4(c) => self.follow_straight(StraightType::Pair, Some(c), 4),
+            Action::PairStraight5(c) => self.follow_straight(StraightType::Pair, Some(c), 5),
+            Action::PairStraight6(c) => self.follow_straight(StraightType::Pair, Some(c), 6),
+            Action::PairStraight7(c) => self.follow_straight(StraightType::Pair, Some(c), 7),
+            Action::PairStraight8(c) => self.follow_straight(StraightType::Pair, Some(c), 8),
+            Action::PairStraight9(c) => self.follow_straight(StraightType::Pair, Some(c), 9),
+            Action::PairStraight10(c) => self.follow_straight(StraightType::Pair, Some(c), 10),
+            Action::Triple(c) => self.follow_triple(Some(c), Carry::None),
+            Action::TripleSingle(c, _) => self.follow_triple(Some(c), Carry::Single),
+            Action::TriplePair(c, _) => self.follow_triple(Some(c), Carry::Pair),
+            Action::TripleStraight2(c) => self.follow_straight(StraightType::Triple, Some(c), 2),
             Action::TripleStraight2Single(c, _, _) => {
-                self.play_triple_straight(Some(c), Carry::Single, 2)
+                self.follow_triple_straight(Some(c), Carry::Single, 2)
             }
             Action::TripleStraight2Pair(c, _, _) => {
-                self.play_triple_straight(Some(c), Carry::Pair, 2)
+                self.follow_triple_straight(Some(c), Carry::Pair, 2)
             }
-            Action::TripleStraight3(c) => self.play_straight(StraightType::Triple, Some(c), 3),
+            Action::TripleStraight3(c) => self.follow_straight(StraightType::Triple, Some(c), 3),
             Action::TripleStraight3Single(c, ..) => {
-                self.play_triple_straight(Some(c), Carry::Single, 3)
+                self.follow_triple_straight(Some(c), Carry::Single, 3)
             }
             Action::TripleStraight3Pair(c, _, _, _) => {
-                self.play_triple_straight(Some(c), Carry::Pair, 3)
+                self.follow_triple_straight(Some(c), Carry::Pair, 3)
             }
-            Action::TripleStraight4(c) => self.play_straight(StraightType::Triple, Some(c), 4),
+            Action::TripleStraight4(c) => self.follow_straight(StraightType::Triple, Some(c), 4),
             Action::TripleStraight4Single(c, _, _, _, _) => {
-                self.play_triple_straight(Some(c), Carry::Single, 4)
+                self.follow_triple_straight(Some(c), Carry::Single, 4)
             }
             Action::TripleStraight4Pair(c, _, _, _, _) => {
-                self.play_triple_straight(Some(c), Carry::Pair, 4)
+                self.follow_triple_straight(Some(c), Carry::Pair, 4)
             }
-            Action::TripleStraight5(c) => self.play_straight(StraightType::Triple, Some(c), 5),
+            Action::TripleStraight5(c) => self.follow_straight(StraightType::Triple, Some(c), 5),
             Action::TripleStraight5Single(c, _, _, _, _, _) => {
-                self.play_triple_straight(Some(c), Carry::Single, 5)
+                self.follow_triple_straight(Some(c), Carry::Single, 5)
             }
-            Action::TripleStraight6(c) => self.play_straight(StraightType::Triple, Some(c), 6),
-            Action::BombSingle(c, _, _) => self.play_bomb_carry(Some(c), Carry::Single),
-            Action::BombPair(c, _, _) => self.play_bomb_carry(Some(c), Carry::Pair),
+            Action::TripleStraight6(c) => self.follow_straight(StraightType::Triple, Some(c), 6),
+            Action::BombSingle(c, _, _) => self.follow_bomb_carry(Some(c), Carry::Single),
+            Action::BombPair(c, _, _) => self.follow_bomb_carry(Some(c), Carry::Pair),
             Action::Bomb(c) => {
                 not_bomb = false;
-                self.play_bomb(Some(c))
+                self.follow_bomb(Some(c))
             }
             Action::Rocket => {
                 not_bomb = false;
@@ -139,7 +153,7 @@ impl Hand {
         };
 
         if not_bomb {
-            actions.extend_from_slice(&self.play_bomb(None));
+            actions.extend_from_slice(&self.follow_bomb(None));
         }
 
         if !own_round {
@@ -148,66 +162,66 @@ impl Hand {
         actions
     }
 
-    fn play_any(&self) -> Vec<(Action, Hand)> {
+    fn follow_any(&self) -> Vec<(Action, Hand)> {
         let mut actions = Vec::new();
         //20张牌
-        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Single, 5));
-        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 10));
-        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Pair, 4));
+        actions.extend_from_slice(&self.follow_triple_straight(None, Carry::Single, 5));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Pair, None, 10));
+        actions.extend_from_slice(&self.follow_triple_straight(None, Carry::Pair, 4));
         //18张牌
-        actions.extend_from_slice(&self.play_straight(StraightType::Triple, None, 6));
-        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 9));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Triple, None, 6));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Pair, None, 9));
         //16张牌
-        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Single, 4));
-        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 8));
+        actions.extend_from_slice(&self.follow_triple_straight(None, Carry::Single, 4));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Pair, None, 8));
         //15张牌
-        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Pair, 3));
-        actions.extend_from_slice(&self.play_straight(StraightType::Triple, None, 5));
+        actions.extend_from_slice(&self.follow_triple_straight(None, Carry::Pair, 3));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Triple, None, 5));
         //14张牌
-        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 7));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Pair, None, 7));
         //12张牌
-        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Single, 3));
-        actions.extend_from_slice(&self.play_straight(StraightType::Triple, None, 4));
-        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 6));
-        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 12));
+        actions.extend_from_slice(&self.follow_triple_straight(None, Carry::Single, 3));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Triple, None, 4));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Pair, None, 6));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Single, None, 12));
         //11张牌
-        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 11));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Single, None, 11));
         //10张牌
-        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Pair, 2));
-        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 5));
-        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 10));
+        actions.extend_from_slice(&self.follow_triple_straight(None, Carry::Pair, 2));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Pair, None, 5));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Single, None, 10));
         //9张牌
-        actions.extend_from_slice(&self.play_straight(StraightType::Triple, None, 3));
-        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 9));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Triple, None, 3));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Single, None, 9));
         //8张牌
-        actions.extend_from_slice(&self.play_triple_straight(None, Carry::Single, 2));
-        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 4));
-        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 8));
+        actions.extend_from_slice(&self.follow_triple_straight(None, Carry::Single, 2));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Pair, None, 4));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Single, None, 8));
         //7张牌
-        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 7));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Single, None, 7));
         //6张牌
-        actions.extend_from_slice(&self.play_straight(StraightType::Triple, None, 2));
-        actions.extend_from_slice(&self.play_straight(StraightType::Pair, None, 3));
-        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 6));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Triple, None, 2));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Pair, None, 3));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Single, None, 6));
         //5张牌
-        actions.extend_from_slice(&self.play_triple(None, Carry::Pair));
-        actions.extend_from_slice(&self.play_straight(StraightType::Single, None, 5));
+        actions.extend_from_slice(&self.follow_triple(None, Carry::Pair));
+        actions.extend_from_slice(&self.follow_straight(StraightType::Single, None, 5));
         //3张牌
-        actions.extend_from_slice(&self.play_triple(None, Carry::None));
+        actions.extend_from_slice(&self.follow_triple(None, Carry::None));
         //4张牌
-        actions.extend_from_slice(&self.play_triple(None, Carry::Single));
+        actions.extend_from_slice(&self.follow_triple(None, Carry::Single));
         //2张牌
-        actions.extend_from_slice(&self.play_pair(None));
+        actions.extend_from_slice(&self.follow_pair(None));
         //1张牌
-        actions.extend_from_slice(&self.play_single(None));
+        actions.extend_from_slice(&self.follow_single(None));
         //8张牌
-        actions.extend_from_slice(&self.play_bomb_carry(None, Carry::Pair));
+        actions.extend_from_slice(&self.follow_bomb_carry(None, Carry::Pair));
         //6张牌
-        actions.extend_from_slice(&self.play_bomb_carry(None, Carry::Single));
+        actions.extend_from_slice(&self.follow_bomb_carry(None, Carry::Single));
         actions
     }
 
-    fn play_single(&self, card: Option<&Card>) -> Vec<(Action, Hand)> {
+    fn follow_single(&self, card: Option<&Card>) -> Vec<(Action, Hand)> {
         let mut actions = Vec::new();
         let mut card = Self::plus(card);
 
@@ -217,14 +231,14 @@ impl Hand {
             };
 
             let mut hand = *self;
-            if hand.play_card(&c) {
+            if hand.play_card(c).is_some() {
                 actions.push((Action::Single(c), hand));
             }
             card = c.plus();
         }
     }
 
-    fn play_straight(
+    fn follow_straight(
         &self,
         st: StraightType,
         card: Option<&Card>,
@@ -243,10 +257,10 @@ impl Hand {
 
         while straight < Card::Two as u16 {
             let action = match st {
-                StraightType::Single => self.strait_single(straight, straight_start, length),
-                StraightType::Pair => self.straight_pair(straight as u64, straight_start, length),
+                StraightType::Single => self.follow_strait_single(straight, straight_start, length),
+                StraightType::Pair => self.follow_straight_pair(straight as u64, straight_start, length),
                 StraightType::Triple => {
-                    self.straight_triple(straight as u64, straight_start, length)
+                    self.follow_straight_triple(straight as u64, straight_start, length)
                 }
             };
             actions.extend_from_slice(&action);
@@ -257,7 +271,7 @@ impl Hand {
         actions
     }
 
-    fn strait_single(
+    fn follow_strait_single(
         &self,
         straight: u16,
         straight_start: Card,
@@ -269,7 +283,7 @@ impl Hand {
         if hand.0 as u16 & straight == straight {
             let mut card = straight_start;
             for _ in 0..length {
-                hand.play_card(&card);
+                hand.play_card(card);
                 card = card.plus().unwrap();
             }
             match length {
@@ -287,7 +301,7 @@ impl Hand {
         actions
     }
 
-    fn straight_pair(
+    fn follow_straight_pair(
         &self,
         straight: u64,
         straight_start: Card,
@@ -300,8 +314,8 @@ impl Hand {
         if hand.0 & straight == straight {
             let mut card = straight_start;
             for _ in 0..length {
-                hand.play_card(&card);
-                hand.play_card(&card);
+                hand.play_card(card);
+                hand.play_card(card);
                 card = card.plus().unwrap();
             }
             match length {
@@ -319,7 +333,7 @@ impl Hand {
         actions
     }
 
-    fn straight_triple(
+    fn follow_straight_triple(
         &self,
         straight: u64,
         straight_start: Card,
@@ -332,9 +346,9 @@ impl Hand {
         if hand.0 & straight == straight {
             let mut card = straight_start;
             for _ in 0..length {
-                hand.play_card(&card);
-                hand.play_card(&card);
-                hand.play_card(&card);
+                hand.play_card(card);
+                hand.play_card(card);
+                hand.play_card(card);
                 card = card.plus().unwrap();
             }
             match length {
@@ -349,7 +363,7 @@ impl Hand {
         actions
     }
 
-    fn play_pair(&self, card: Option<&Card>) -> Vec<(Action, Hand)> {
+    fn follow_pair(&self, card: Option<&Card>) -> Vec<(Action, Hand)> {
         let mut actions = Vec::new();
         let mut card = Self::plus(card);
 
@@ -357,8 +371,8 @@ impl Hand {
             let pair = c as u64 | (c as u64) << 16;
             let mut hand = *self;
             if hand.0 & pair == pair {
-                hand.play_card(&c);
-                hand.play_card(&c);
+                hand.play_card(c);
+                hand.play_card(c);
                 actions.push((Action::Pair(c), hand));
             }
 
@@ -370,7 +384,7 @@ impl Hand {
         return actions;
     }
 
-    fn play_triple(&self, card: Option<&Card>, carry: Carry) -> Vec<(Action, Hand)> {
+    fn follow_triple(&self, card: Option<&Card>, carry: Carry) -> Vec<(Action, Hand)> {
         let mut actions = Vec::new();
         let mut card = Self::plus(card);
 
@@ -378,20 +392,20 @@ impl Hand {
             let triple = c as u64 | (c as u64) << 16 | (c as u64) << 32;
             let mut hand = *self;
             if hand.0 & triple == triple {
-                hand.play_card(&c);
-                hand.play_card(&c);
-                hand.play_card(&c);
+                hand.play_card(c);
+                hand.play_card(c);
+                hand.play_card(c);
                 match carry {
                     Carry::None => {
                         actions.push((Action::Triple(c), hand));
                     }
                     Carry::Single => {
-                        for (carry, hand) in hand.play_triple_single(&c) {
+                        for (carry, hand) in hand.follow_triple_single(&c) {
                             actions.push((Action::TripleSingle(c, carry), hand))
                         }
                     }
                     Carry::Pair => {
-                        for (carry, hand) in hand.play_triple_pair(&c) {
+                        for (carry, hand) in hand.follow_triple_pair(&c) {
                             actions.push((Action::TriplePair(c, carry), hand))
                         }
                     }
@@ -407,9 +421,9 @@ impl Hand {
         return actions;
     }
 
-    fn play_triple_single(&self, card: &Card) -> Vec<(Card, Hand)> {
+    fn follow_triple_single(&self, card: &Card) -> Vec<(Card, Hand)> {
         let mut actions = Vec::new();
-        for (a, h) in self.play_single(None) {
+        for (a, h) in self.follow_single(None) {
             if let Action::Single(c) = a {
                 if c != *card {
                     actions.push((c, h));
@@ -420,9 +434,9 @@ impl Hand {
         actions
     }
 
-    fn play_triple_pair(&self, card: &Card) -> Vec<(Card, Hand)> {
+    fn follow_triple_pair(&self, card: &Card) -> Vec<(Card, Hand)> {
         let mut actions = Vec::new();
-        for (a, h) in self.play_pair(None) {
+        for (a, h) in self.follow_pair(None) {
             if let Action::Pair(c) = a {
                 if c != *card {
                     actions.push((c, h));
@@ -433,7 +447,7 @@ impl Hand {
         actions
     }
 
-    fn play_triple_straight(
+    fn follow_triple_straight(
         &self,
         card: Option<&Card>,
         carry: Carry,
@@ -442,7 +456,7 @@ impl Hand {
         let mut actions = Vec::new();
         let hand = *self;
 
-        for (action, hand) in hand.play_straight(StraightType::Triple, card, length) {
+        for (action, hand) in hand.follow_straight(StraightType::Triple, card, length) {
             let straight_start = match action {
                 Action::TripleStraight2(c) => c,
                 Action::TripleStraight3(c) => c,
@@ -526,7 +540,7 @@ impl Hand {
         if let Some(card) = cards.last() {
             min_card = card.minus();
         }
-        hand.play_single(min_card.as_ref())
+        hand.follow_single(min_card.as_ref())
             .into_iter()
             .for_each(|(a, h)| {
                 if let Action::Single(c) = a {
@@ -546,7 +560,7 @@ impl Hand {
         if let Some(card) = cards.last() {
             min_card = card.minus();
         }
-        hand.play_pair(min_card.as_ref())
+        hand.follow_pair(min_card.as_ref())
             .into_iter()
             .for_each(|(a, h)| {
                 if let Action::Single(c) = a {
@@ -561,9 +575,9 @@ impl Hand {
             });
     }
 
-    fn play_bomb_carry(&self, card: Option<&Card>, carry: Carry) -> Vec<(Action, Hand)> {
+    fn follow_bomb_carry(&self, card: Option<&Card>, carry: Carry) -> Vec<(Action, Hand)> {
         let mut actions = Vec::new();
-        for (action, hand) in self.play_bomb(card) {
+        for (action, hand) in self.follow_bomb(card) {
             if let Action::Bomb(c) = action {
                 let mut carry_actions = Vec::new();
                 match carry {
@@ -587,7 +601,7 @@ impl Hand {
         actions
     }
 
-    fn play_bomb(&self, card: Option<&Card>) -> Vec<(Action, Hand)> {
+    fn follow_bomb(&self, card: Option<&Card>) -> Vec<(Action, Hand)> {
         let mut actions = Vec::new();
         let mut card = Self::plus(card);
 
@@ -611,18 +625,6 @@ impl Hand {
         }
 
         actions
-    }
-
-    fn play_card(&mut self, card: &Card) -> bool {
-        let mut card = (*card as u64) << 48;
-        for _ in 0..4 {
-            if self.0 & card == card {
-                self.0 &= !card;
-                return true;
-            }
-            card >>= 16;
-        }
-        false
     }
 
     fn plus(card: Option<&Card>) -> Option<Card> {
@@ -669,8 +671,8 @@ mod tests {
     #[test]
     fn test_play() {
         let mut hand = Hand::from("343353BR");
-        hand.play_card(&Card::Four);
-        hand.play_card(&Card::RedJoker);
+        hand.play_card(Card::Four);
+        hand.play_card(Card::RedJoker);
         log::debug!("{}", hand);
         assert_eq!(hand.0, 1 << 48 | 1 << 32 | 1 << 16 | 1 << 2 | 1 | 1 << 13);
     }
