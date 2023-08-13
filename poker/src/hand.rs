@@ -1,14 +1,15 @@
 use std::fmt::Display;
 
 use crate::action::Action;
-use crate::card::Card;
+use crate::card::{Card, SuitCard};
 use crate::game::{Carry, StraightType};
 
+#[allow(dead_code)]
 /// 用u64表示一副牌，每16位代表一个花色，分别是桃仙梅方；用后15位分别表示大王、小王、2、A、K、Q、J、10、9、8、7、6、5、4、3
-pub const DECK_OF_CARDS: u64 = 0b0001111111111111000111111111111100011111111111110111111111111111;
+pub const DECK_OF_CARDS: Hand = Hand(0b0001111111111111000111111111111100011111111111110111111111111111);
 
 #[derive(Default, Copy, Clone, Debug, PartialEq)]
-pub struct Hand(pub u64);
+pub struct Hand(u64);
 
 impl From<&str> for Hand {
     fn from(value: &str) -> Self {
@@ -23,15 +24,13 @@ impl From<&str> for Hand {
     }
 }
 
-impl From<u64> for Hand {
-    fn from(value: u64) -> Self {
-        Hand(DECK_OF_CARDS & value).arrange()
+impl Hand{
+    pub fn is_empty(&self) -> bool{
+        self.0 == 0
     }
-}
 
-impl Hand {
-    /// 手牌整理，高位的1跟低位的0互换
-    fn arrange(&self) -> Hand {
+    /// 无视花色的手牌整理，高位的1跟低位的0互换
+    pub fn arrange(&self) -> Hand {
         let mut segments = [
             self.0 & 0xFFFF,
             (self.0 >> 16) & 0xFFFF,
@@ -59,6 +58,24 @@ impl Hand {
         Hand(segments.iter().rev().fold(0, |v, s| s | (v << 16)))
     }
 
+    pub fn contains(&self, suit_card: SuitCard) -> bool{
+        let c = u64::from(suit_card);
+        self.0 & c == c
+    }
+
+    pub fn insert(&mut self, suit_card: SuitCard){
+        self.0 &= u64::from(suit_card)
+    }
+
+    pub fn remove(&mut self, suit_card: SuitCard){
+        log::debug!("self: {:064b}", self.0);
+        log::debug!("suit: {:064b}", u64::from(suit_card));
+        log::debug!("!sui: {:064b}", !u64::from(suit_card));
+        self.0 &= !u64::from(suit_card)
+    }
+}
+
+impl Hand {
     /// 抓牌，不考虑花色，优先放在低位
     fn draw_card(&mut self, card: Card) {
         let mut card = card as u64;
@@ -72,14 +89,14 @@ impl Hand {
     }
 
     /// 打出一张牌
-    pub fn play_card(&mut self, card: Card) -> Option<u64> {
-        let mut card = (card as u64) << 48;
-        for _ in 0..4 {
-            if self.0 & card == card {
-                self.0 &= !card;
-                return Some(card);
+    pub fn play_card(&mut self, card: Card) -> Option<SuitCard> {
+        for i in (0..4).rev() {
+            let suit_card = SuitCard::new(card, i);
+            let c = u64::from(suit_card);
+            if self.0 & c == c {
+                self.0 &= !c;
+                return Some(suit_card);
             }
-            card >>= 16;
         }
         None
     }
@@ -632,6 +649,26 @@ impl Hand {
     }
 }
 
+impl Iterator for Hand {
+    type Item = SuitCard;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut card = Card::RedJoker;
+        loop {
+            match self.play_card(card) {
+                None => {
+                    let Some(next_card) = card.minus() else{
+                        return None;
+                    };
+                    card = next_card;
+                }
+                s => return s,
+            }
+        }
+    }
+    
+}
+
 impl Display for Hand {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "Hand: ")?;
@@ -675,5 +712,20 @@ mod tests {
         hand.play_card(Card::RedJoker);
         log::debug!("{}", hand);
         assert_eq!(hand.0, 1 << 48 | 1 << 32 | 1 << 16 | 1 << 2 | 1 | 1 << 13);
+    }
+
+    #[test]
+    fn test_suit_card(){
+        let cards_except_joker = (0..52)
+        .map(|u| {
+                SuitCard::new(Card::from_u16(1 << (u / 4)).unwrap(), (3 - u % 4) as u8)
+        }).collect::<Vec<SuitCard>>();
+
+        let mut hand = DECK_OF_CARDS;
+        for suit_card in cards_except_joker{
+            hand.remove(suit_card);
+        }
+
+        assert_eq!(hand.0, Card::BlackJoker as u64|Card::RedJoker as u64);
     }
 }

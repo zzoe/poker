@@ -6,20 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "*"
 dioxus = { version = "*" }
-dioxus-free-icons = {version = "*", features = ["font-awesome-solid"]}
 dioxus-router = { version = "*" }
-dioxus-toast = { version = "*", default-features = false, features = ["web"] }
-dioxus-use-storage = { version = "*" }
 dioxus-web = { version = "*" }
-fermi = {version = "*"}
-gloo = "*"
-js-sys = "*"
-keyboard-types = {version = "*"}
 log = "*"
-poker = { path = "../../poker"}
-pulldown-cmark = "*"
-urlencoding = "*"
+poker = { path = "../../poker" }
 wasm-logger = "*"
-web-sys = { version = "*", features = ["Storage"] }

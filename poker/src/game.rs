@@ -141,14 +141,14 @@ impl Game {
             log::error!("手牌为空？ {}", state);
             return None;
         };
-        if hand.0 == 0 {
+        if hand.is_empty(){
             log::error!("手牌为空？ {}", state);
             return None;
         }
 
         for (action, hand) in hand.follow(&state.action) {
             state.player[turn] = hand;
-            let pass = hand.0 == 0;
+            let pass = hand.is_empty();
             let child = self.arena.new_node(State {
                 action,
                 player: state.player.clone(),

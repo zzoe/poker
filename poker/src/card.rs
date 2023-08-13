@@ -2,6 +2,44 @@ use crate::Error;
 use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+pub enum SuitCard {
+    /// ♠黑桃
+    Spades(Card),
+    /// ♥红心
+    Hearts(Card),
+    /// ♣梅花
+    Clubs(Card),
+    /// ♦方块, 大小王暂时也在这里
+    Diamonds(Card),
+}
+
+impl SuitCard{
+    pub fn new(card: Card, suit: u8) -> Self{
+        match suit {
+            3 => SuitCard::Spades(card),
+            2 => SuitCard::Hearts(card),
+            1 => SuitCard::Clubs(card),
+            0 => SuitCard::Diamonds(card),
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl From<SuitCard> for u64{
+    fn from(suit_card: SuitCard) -> Self {
+        match suit_card {
+            SuitCard::Spades(card) => {
+                // log::debug!("{:064b}", card as u64);
+                (card as u64) << 48
+            },
+            SuitCard::Hearts(card) => (card as u64) << 32,
+            SuitCard::Clubs(card) => (card as u64) << 16,
+            SuitCard::Diamonds(card) => card as u64,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Card {
     Three = 1,
     Four = 1 << 1,
@@ -42,7 +80,7 @@ impl Card {
         }
     }
 
-    fn from_u16(n: u16) -> Result<Card, Error> {
+    pub fn from_u16(n: u16) -> Result<Card, Error> {
         match n {
             1 => Ok(Card::Three),
             0b10 => Ok(Card::Four),
@@ -63,7 +101,7 @@ impl Card {
         }
     }
 
-    pub(crate) fn plus(&self) -> Option<Card> {
+    pub fn plus(&self) -> Option<Card> {
         if Card::RedJoker == *self {
             None
         } else {

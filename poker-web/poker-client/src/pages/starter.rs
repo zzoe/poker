@@ -1,10 +1,12 @@
-use crate::pages::Card;
+use crate::pages::CardUI;
+use crate::{OurHand, OpponentHand, Route};
 use dioxus::prelude::*;
-use dioxus_router::use_router;
-
+use dioxus_router::prelude::use_navigator;
 
 pub fn PokerGame(cx: Scope) -> Element {
-    let router = use_router(cx);
+    let nav = use_navigator(cx);
+    let our_hand = use_shared_state::<OurHand>(cx).unwrap();
+    let opponent_hand = use_shared_state::<OpponentHand>(cx).unwrap();
 
     cx.render(rsx! {
         div { class: "flex flex-col space-y-6",
@@ -14,11 +16,11 @@ pub fn PokerGame(cx: Scope) -> Element {
                     class: "flex shadow grow h-full items-center px-1",
                     id: "hands_of_player1",
                     onclick: |_| {
-                        router.navigate_to("/cards");
-                        log::info!("sdf");
+                        nav.push("/cards");
                     },
-                    Card { value: 1 }
-                    Card { value: 2 }
+                    for c in our_hand.read().0 {
+                        CardUI { suit_card: c }
+                    }
                 }
                 input {
                     class: "peer/player1",
@@ -35,12 +37,11 @@ pub fn PokerGame(cx: Scope) -> Element {
                     class: "flex shadow grow h-full items-center px-1",
                     id: "hands_of_player2",
                     onclick: |_| {
-                        router.navigate_to("/cards");
+                        nav.push("/cards");
                     },
-                    Card { value: 2 }
-                    Card { value: 2 }
-                    Card { value: 2 }
-                    Card { value: 2 }
+                    for c in opponent_hand.read().0 {
+                        CardUI { suit_card: c }
+                    }
                 }
                 input {
                     class: "peer/player2",
@@ -57,6 +58,9 @@ pub fn PokerGame(cx: Scope) -> Element {
                     "清空"
                 }
                 button { class: "w-32 py-2 px-4 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75",
+                    onclick: |_| {
+                        nav.push(Route::History {});
+                    },
                     "开始/重开"
                 }
                 button { class: "w-32 py-2 px-4 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75",

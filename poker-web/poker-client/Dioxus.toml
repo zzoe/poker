@@ -1,31 +1,31 @@
 [application]
 
-# dioxus project name
+# App (Project) Name
 name = "poker-client"
 
-# default platfrom
+# Dioxus App Default Platform
 # you can also use `dioxus serve/build --platform XXX` to use other platform
-# value: web | desktop
+# desktop, web, mobile, ssr
 default_platform = "web"
 
-# Web `build` & `serve` dist path
+# `build` & `serve` dist path
 out_dir = "../dist"
 
-# resource (static) file folder
+# resource (public) file folder
 asset_dir = "public"
 
 [web.app]
 
 # HTML title tag content
-title = "poker "
+title = "poker"
 
 [web.watcher]
 
-watch_path = [
-    "src", 
-    "public", 
-    "Dioxus.toml",
-]
+# when watcher trigger, regenerate the `index.html`
+reload_html = true
+
+# which files or dirs will be watcher monitoring
+watch_path = ["src", "public", "Dioxus.toml"]
 
 index_on_404 = true
 
@@ -33,21 +33,25 @@ index_on_404 = true
 [web.resource]
 
 # CSS style file
-style = []
+style = ["tailwind.css"]
 
 # Javascript code file
 script = [
-    "https://cdn.jsdelivr.net/npm/@unocss/runtime",
-    "https://cdn.jsdelivr.net/npm/@unocss/runtime/uno.global.js",
-    "/assets/uno/uno.config.js",
+    # "https://cdn.jsdelivr.net/npm/@unocss/runtime",
+    # "https://cdn.jsdelivr.net/npm/@unocss/runtime/uno.global.js",
+    # "/assets/uno/uno.config.js",
     # "https://cdn.tailwindcss.com",
     # "/assets/tailwind/tailwind.config.js",
 ]
 
 [web.resource.dev]
 
-# Javascript code file
 # serve: [dev-server] only
+
+# CSS style file
+style = []
+
+# Javascript code file
 script = []
 
 [application.tools]
