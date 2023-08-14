@@ -25,6 +25,10 @@ impl From<&str> for Hand {
 }
 
 impl Hand{
+    pub fn value(&self) -> u64{
+        self.0
+    }
+
     pub fn is_empty(&self) -> bool{
         self.0 == 0
     }
@@ -64,13 +68,10 @@ impl Hand{
     }
 
     pub fn insert(&mut self, suit_card: SuitCard){
-        self.0 &= u64::from(suit_card)
+        self.0 |= u64::from(suit_card);
     }
 
     pub fn remove(&mut self, suit_card: SuitCard){
-        log::debug!("self: {:064b}", self.0);
-        log::debug!("suit: {:064b}", u64::from(suit_card));
-        log::debug!("!sui: {:064b}", !u64::from(suit_card));
         self.0 &= !u64::from(suit_card)
     }
 }

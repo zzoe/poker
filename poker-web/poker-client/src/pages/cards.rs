@@ -1,11 +1,13 @@
 use dioxus::prelude::*;
 use poker::{Card, SuitCard};
 
-use crate::{OurHand, RemainHand};
+use crate::pages::{GameState, OpponentHand, OurHand, RemainHand};
 
 pub fn Cards(cx: Scope) -> Element {
     let remain_hand = use_shared_state::<RemainHand>(cx).unwrap();
     let our_hand = use_shared_state::<OurHand>(cx).unwrap();
+    let opponent_hand = use_shared_state::<OpponentHand>(cx).unwrap();
+    let game_state = use_shared_state::<GameState>(cx).unwrap();
 
     let cards_except_joker = (0..52)
         .map(|u| {
@@ -15,20 +17,22 @@ pub fn Cards(cx: Scope) -> Element {
             )
         })
         .map(|(key, suit_card)| {
-            // 回调是作为参数传递给CardUI的，如果直接写在里面，会导致suit_card值异常
+            // 回调是作为参数传递给CardUI的，如果直接写在rsx!里面，会导致suit_card值异常
             let on_click = move |_| {
-                log::debug!("suit_card: {:064b}", u64::from(suit_card));
                 remain_hand.write().0.remove(suit_card);
-                our_hand.write().0.insert(suit_card);
-            };
-            rsx!(
-                CardUI {
-                    key: "{key}",
-                    suit_card: suit_card,
-                    containing: remain_hand.read().0.contains(suit_card),
-                    on_click: on_click
+                match *game_state.read() {
+                    GameState::OurHandEditing => our_hand.write().0.insert(suit_card),
+                    GameState::OpponentHandEditing => opponent_hand.write().0.insert(suit_card),
+                    _ => unreachable!(),
                 }
-            )
+            };
+
+            rsx!(CardUI {
+                key: "{key}",
+                suit_card: suit_card,
+                containing: remain_hand.read().0.contains(suit_card),
+                on_click: on_click
+            })
         });
 
     let black_joker = SuitCard::new(Card::BlackJoker, 0);
