@@ -9,6 +9,17 @@ pub fn Cards(cx: Scope) -> Element {
     let opponent_hand = use_shared_state::<OpponentHand>(cx).unwrap();
     let game_state = use_shared_state::<GameState>(cx).unwrap();
 
+    let card_click = |suit_card: SuitCard| {
+        move |_| {
+            match *game_state.read() {
+                GameState::OurHandEditing => our_hand.write().0.insert(suit_card),
+                GameState::OpponentHandEditing => opponent_hand.write().0.insert(suit_card),
+                _ => return,
+            }
+            remain_hand.write().0.remove(suit_card);
+        }
+    };
+
     let cards_except_joker = (0..52)
         .map(|u| {
             (
@@ -18,20 +29,20 @@ pub fn Cards(cx: Scope) -> Element {
         })
         .map(|(key, suit_card)| {
             // 回调是作为参数传递给CardUI的，如果直接写在rsx!里面，会导致suit_card值异常
-            let on_click = move |_| {
-                remain_hand.write().0.remove(suit_card);
-                match *game_state.read() {
-                    GameState::OurHandEditing => our_hand.write().0.insert(suit_card),
-                    GameState::OpponentHandEditing => opponent_hand.write().0.insert(suit_card),
-                    _ => unreachable!(),
-                }
-            };
+            // let on_click = move |_| {
+            //     match *game_state.read() {
+            //         GameState::OurHandEditing => our_hand.write().0.insert(suit_card),
+            //         GameState::OpponentHandEditing => opponent_hand.write().0.insert(suit_card),
+            //         _ => return,
+            //     }
+            //     remain_hand.write().0.remove(suit_card);
+            // };
 
             rsx!(CardUI {
                 key: "{key}",
                 suit_card: suit_card,
                 containing: remain_hand.read().0.contains(suit_card),
-                on_click: on_click
+                on_click: card_click(suit_card)
             })
         });
 
@@ -39,24 +50,22 @@ pub fn Cards(cx: Scope) -> Element {
     let red_joker = SuitCard::new(Card::RedJoker, 0);
 
     cx.render(rsx! {
-        div { class: "grid grid-cols-4 items-center justify-center container mx-auto px-8 gap-3",
+        div { class: "flex-shrink-0 flex flex-wrap justify-evenly ml-8 w-44",
             cards_except_joker,
-            div {}
+            div { class: "w-9" }
             CardUI {
                 key: "53",
                 suit_card: black_joker,
                 containing: remain_hand.read().0.contains(black_joker),
-                // 回调是作为参数传递给CardUI的，如果这里使用black_joker变量，会导致suit_card值异常
-                on_click: |_| remain_hand.write().0.remove(SuitCard::new(Card::BlackJoker, 0))
+                on_click: card_click(SuitCard::new(Card::BlackJoker, 0))
             }
             CardUI {
                 key: "54",
                 suit_card: red_joker,
                 containing: remain_hand.read().0.contains(red_joker),
-                // 回调是作为参数传递给CardUI的，如果这里使用red_joker变量，会导致suit_card值异常
-                on_click: |_| remain_hand.write().0.remove(SuitCard::new(Card::RedJoker, 0))
+                on_click: card_click(SuitCard::new(Card::RedJoker, 0))
             }
-            div {}
+            div { class: "w-9" }
         }
     })
 }
@@ -88,12 +97,12 @@ pub fn CardUI<'a>(cx: Scope<'a, CardProps<'a>>) -> Element {
     };
 
     let bg = (!cx.props.containing)
-        .then(|| "bg-gray-500")
+        .then(|| "bg-stone-300")
         .unwrap_or_default();
 
     cx.render(rsx! {
         div {
-            class: "flex relative shadow mx-1 py-1 justify-center items-center w-9 h-11 cursor-default border border-amber-200 {color} {bg}",
+            class: "flex relative shadow justify-center items-center ml-2 mt-2 w-9 h-11 cursor-default outline outline-amber-200 hover:bg-sky-100 {color} {bg}",
             style: " font-family: {card_font}",
             onclick: move |event| {
                 if let Some(on_click) = cx.props.on_click.as_ref() {

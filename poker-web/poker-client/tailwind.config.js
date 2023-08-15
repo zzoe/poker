@@ -8,6 +8,12 @@ module.exports = {
     "../dist/**/*.html",
   ],
   theme: {
+    minWidth: {
+      53: "13.25rem",
+    },
+    minHeight: {
+      16: "4rem",
+    },
     extend: {},
   },
   plugins: [],
