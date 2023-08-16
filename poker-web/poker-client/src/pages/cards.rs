@@ -102,7 +102,7 @@ pub fn CardUI<'a>(cx: Scope<'a, CardProps<'a>>) -> Element {
 
     cx.render(rsx! {
         div {
-            class: "flex relative shadow justify-center items-center ml-2 mt-2 w-9 h-11 cursor-default outline outline-amber-200 hover:bg-sky-100 {color} {bg}",
+            class: "flex relative shadow justify-center items-center ml-2 mt-2 w-9 h-11 text-2xl cursor-default outline outline-amber-200 hover:bg-sky-100 {color} {bg}",
             style: " font-family: {card_font}",
             onclick: move |event| {
                 if let Some(on_click) = cx.props.on_click.as_ref() {
@@ -111,7 +111,8 @@ pub fn CardUI<'a>(cx: Scope<'a, CardProps<'a>>) -> Element {
                     }
                 }
             },
-            div { class: "absolute top-0 left-0 text-xs {color}", "{suit}" }
+            div { class: "absolute top-0 left-0 text-sm {color}", "{suit}" }
+            div { class: "absolute bottom-0 right-0 text-sm {color}", "{suit}" }
             "{card}"
         }
     })

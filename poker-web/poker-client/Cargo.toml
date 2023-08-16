@@ -9,6 +9,7 @@ edition = "2021"
 dioxus = { version = "*" }
 dioxus-router = { version = "*" }
 dioxus-web = { version = "*" }
+indextree = "*"
 log = "*"
 poker = { path = "../../poker" }
 wasm-logger = "*"

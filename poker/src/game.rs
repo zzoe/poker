@@ -67,6 +67,10 @@ impl State {
     pub fn action_cards(&self) -> Vec<Card> {
         self.action.into()
     }
+
+    pub fn turn(&self) -> u8 {
+        self.turn
+    }
 }
 
 pub struct Game {

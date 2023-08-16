@@ -36,7 +36,6 @@ fn Main(cx: Scope) -> Element {
     use_shared_state_provider(cx, || RemainHand(DECK_OF_CARDS));
     use_shared_state_provider(cx, || OurHand(Hand::default()));
     use_shared_state_provider(cx, || OpponentHand(Hand::default()));
-    use_shared_state_provider(cx, || Option::<Game>::None);
 
     render!(
         main { class: "h-screen bg-cover bg-white dark:bg-gray-600 p-6",
