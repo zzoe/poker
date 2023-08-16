@@ -21,13 +21,17 @@ fn interactive() -> Result<()> {
         let hand_own = read("请输入自己的手牌\n");
         let hand_opponent = read("请输入对手的手牌\n");
         let turn = read("请选择先手： 0-自己先手  1-对方先手； 默认0-自己先手\n")
-            .parse::<bool>()
+            .parse::<u8>()
+            .map(|t| t != 0)
             .unwrap_or_default();
 
-        let mut game = match poker::Game::new(vec![hand_own.as_str(), hand_opponent.as_str()], turn as u8) {
+        let mut game = match poker::Game::new(
+            vec![hand_own.as_str(), hand_opponent.as_str()],
+            turn.then(|| 1).unwrap_or_default(),
+        ) {
             Ok(game) => game,
             Err(e) => {
-                log::error!("{}", e);
+                log::error!("创建游戏失败： {}", e);
                 continue;
             }
         };

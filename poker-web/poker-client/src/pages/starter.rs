@@ -119,7 +119,6 @@ pub fn PokerGame(cx: Scope) -> Element {
                                 *game_state.write() = GameState::Playing;
                                 new_game.play();
                                 log::debug!("pass: {}", new_game.pass());
-                                new_game.print();
                                 has_no_solution.set(!new_game.pass());
                                 *game.write() = Some(new_game);
                             }
@@ -132,9 +131,7 @@ pub fn PokerGame(cx: Scope) -> Element {
                     "悔一步"
                 }
             }
-            div { class: "flex justify-center space-x-8",
-                if *has_no_solution.get() { "无解" }else{""}
-            }
+            div { class: "flex justify-center space-x-8", hidden: game.read().as_ref().map(|g| g.pass()).unwrap_or(true), "无解" }
         }
     })
 }

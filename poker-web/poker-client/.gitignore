@@ -18,3 +18,4 @@ Cargo.lock
 # node modules
 node_modules
 pnpm-lock.yaml
+tailwind.css

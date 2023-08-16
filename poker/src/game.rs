@@ -64,7 +64,7 @@ impl State {
         self.action.to_string()
     }
 
-    pub fn action_cards(&self) -> Vec<Card>{
+    pub fn action_cards(&self) -> Vec<Card> {
         self.action.into()
     }
 }
@@ -82,7 +82,10 @@ impl Game {
     }
 
     pub fn pass(&self) -> bool {
-        self.arena.get(self.root).unwrap().get().pass
+        self.arena
+            .get(self.root)
+            .map(|n| !n.is_removed() && n.get().pass)
+            .unwrap_or_default()
     }
 
     pub fn play(&mut self) {
@@ -137,14 +140,10 @@ impl Game {
         let mut next_node_id = None;
         let turn = state.turn as usize;
 
-        let Some(hand) = state.player.get(turn) else {
+        let Some(hand) = state.player.get(turn).filter(|&h|!h.is_empty()) else {
             log::error!("手牌为空？ {}", state);
             return None;
         };
-        if hand.is_empty(){
-            log::error!("手牌为空？ {}", state);
-            return None;
-        }
 
         for (action, hand) in hand.follow(&state.action) {
             state.player[turn] = hand;
