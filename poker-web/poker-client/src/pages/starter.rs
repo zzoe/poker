@@ -104,11 +104,26 @@ pub fn PokerGame(cx: Scope) -> Element {
         match *inner_game_state {
             GameState::Playing => {
                 // log::debug!("重开");
+                //状态
                 *inner_game_state = GameState::OpponentHandEditing;
+                //路由
                 nav.replace(Route::Cards {});
-                our_hand.write().0 = init_hand.current().0;
-                opponent_hand.write().0 = init_hand.current().1;
+
+                // 恢复手牌
+                let (old_our, old_opponent, _) = *init_hand.current();
+                our_hand.write().0 = old_our;
+                opponent_hand.write().0 = old_opponent;
+
+                // 恢复剩余牌堆
+                let mut remain = DECK_OF_CARDS;
+                remain.remove_hand(old_our);
+                remain.remove_hand(old_opponent);
+                remain_hand.write().0 = remain;
+
+                // 是否有解
                 no_solution.set(false);
+
+                //初始节点
                 if let Some(inner_game) = game.current().as_ref() {
                     current_node_id.set(Some(inner_game.root));
                 }

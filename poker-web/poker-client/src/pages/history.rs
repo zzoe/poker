@@ -39,7 +39,7 @@ pub fn History(cx: Scope) -> Element {
     });
 
     cx.render(rsx!(div {
-        class: "flex flex-col",
+        class: "flex flex-col space-y-6",
         hands_ui
     }))
 }
