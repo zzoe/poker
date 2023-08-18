@@ -196,7 +196,7 @@ pub fn PokerGame(cx: Scope) -> Element {
         });
 
     cx.render(rsx! {
-        div { class: "grow flex flex-col space-y-6 overflow-auto",
+        div { class: "grow flex flex-col space-y-6 p-1 overflow-auto",
             div { class: "flex flex-row space-x-2 min-h-16 items-center",
                 label { class: "whitespace-nowrap", "对方手牌：" }
                 div {
