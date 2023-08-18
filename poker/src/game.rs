@@ -106,7 +106,7 @@ impl Game {
         let mut opponent_choice = Vec::new();
         let mut current_node_id = node_id.unwrap_or(self.root);
 
-        log::debug!(
+        log::trace!(
             "current_node_id: {}, removed: {}",
             current_node_id,
             current_node_id.is_removed(&self.arena)
@@ -116,7 +116,7 @@ impl Game {
         }
 
         if let Some(state) = self.arena.get(current_node_id) {
-            log::debug!("turn: {}", state.get().turn());
+            log::trace!("turn: {}", state.get().turn());
             //我方出牌的状态
             if state.get().turn() == 0 {
                 // 从下一个节点取我方的action
@@ -132,10 +132,8 @@ impl Game {
                 }
             }
 
-            log::debug!("3");
             // 对方出牌的状态
             for n in current_node_id.children(&self.arena) {
-                log::debug!("4");
                 if let Some(next_state) = self.arena.get(n) {
                     // log::debug!("next {n}: {}", next_state.get().action_string());
                     opponent_choice.push((n, next_state.get().action_cards()));
