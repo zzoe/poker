@@ -6,7 +6,8 @@ use crate::game::{Carry, StraightType};
 
 #[allow(dead_code)]
 /// 用u64表示一副牌，每16位代表一个花色，分别是桃仙梅方；用后15位分别表示大王、小王、2、A、K、Q、J、10、9、8、7、6、5、4、3
-pub const DECK_OF_CARDS: Hand = Hand(0b0001111111111111000111111111111100011111111111110111111111111111);
+pub const DECK_OF_CARDS: Hand =
+    Hand(0b0001111111111111000111111111111100011111111111110111111111111111);
 
 #[derive(Default, Copy, Clone, Debug, PartialEq)]
 pub struct Hand(u64);
@@ -24,17 +25,40 @@ impl From<&str> for Hand {
     }
 }
 
-impl Hand{
-    pub fn value(&self) -> u64{
+impl Hand {
+    pub fn value(&self) -> u64 {
         self.0
     }
 
-    pub fn is_empty(&self) -> bool{
+    pub fn is_empty(&self) -> bool {
         self.0 == 0
     }
 
+    pub fn contains(&self, suit_card: SuitCard) -> bool {
+        let c = u64::from(suit_card);
+        self.0 & c == c
+    }
+
+    pub fn insert_suit_card(&mut self, suit_card: SuitCard) {
+        self.0 |= u64::from(suit_card);
+    }
+
+    pub fn remove_suit_card(&mut self, suit_card: SuitCard) {
+        self.0 &= !u64::from(suit_card)
+    }
+
+    pub fn insert_hand(&mut self, hand: Hand) {
+        self.0 |= hand.0
+    }
+
+    pub fn remove_hand(&mut self, hand: Hand) {
+        self.0 &= !hand.0
+    }
+}
+
+impl Hand {
     /// 无视花色的手牌整理，高位的1跟低位的0互换
-    pub fn arrange(&self) -> Hand {
+    pub(crate) fn arrange(&self) -> Hand {
         let mut segments = [
             self.0 & 0xFFFF,
             (self.0 >> 16) & 0xFFFF,
@@ -62,21 +86,6 @@ impl Hand{
         Hand(segments.iter().rev().fold(0, |v, s| s | (v << 16)))
     }
 
-    pub fn contains(&self, suit_card: SuitCard) -> bool{
-        let c = u64::from(suit_card);
-        self.0 & c == c
-    }
-
-    pub fn insert(&mut self, suit_card: SuitCard){
-        self.0 |= u64::from(suit_card);
-    }
-
-    pub fn remove(&mut self, suit_card: SuitCard){
-        self.0 &= !u64::from(suit_card)
-    }
-}
-
-impl Hand {
     /// 抓牌，不考虑花色，优先放在低位
     fn draw_card(&mut self, card: Card) {
         let mut card = card as u64;
@@ -276,7 +285,9 @@ impl Hand {
         while straight < Card::Two as u16 {
             let action = match st {
                 StraightType::Single => self.follow_strait_single(straight, straight_start, length),
-                StraightType::Pair => self.follow_straight_pair(straight as u64, straight_start, length),
+                StraightType::Pair => {
+                    self.follow_straight_pair(straight as u64, straight_start, length)
+                }
                 StraightType::Triple => {
                     self.follow_straight_triple(straight as u64, straight_start, length)
                 }
@@ -646,7 +657,10 @@ impl Hand {
     }
 
     fn plus(card: Option<&Card>) -> Option<Card> {
-        card.and_then(|c| c.plus()).or(Some(Card::Three))
+        match card {
+            Some(c) => c.plus(),
+            None => Some(Card::Three),
+        }
     }
 }
 
@@ -667,7 +681,6 @@ impl Iterator for Hand {
             }
         }
     }
-    
 }
 
 impl Display for Hand {
@@ -716,17 +729,16 @@ mod tests {
     }
 
     #[test]
-    fn test_suit_card(){
+    fn test_suit_card() {
         let cards_except_joker = (0..52)
-        .map(|u| {
-                SuitCard::new(Card::from_u16(1 << (u / 4)).unwrap(), (3 - u % 4) as u8)
-        }).collect::<Vec<SuitCard>>();
+            .map(|u| SuitCard::new(Card::from_u16(1 << (u / 4)).unwrap(), (3 - u % 4) as u8))
+            .collect::<Vec<SuitCard>>();
 
         let mut hand = DECK_OF_CARDS;
-        for suit_card in cards_except_joker{
-            hand.remove(suit_card);
+        for suit_card in cards_except_joker {
+            hand.remove_suit_card(suit_card);
         }
 
-        assert_eq!(hand.0, Card::BlackJoker as u64|Card::RedJoker as u64);
+        assert_eq!(hand.0, Card::BlackJoker as u64 | Card::RedJoker as u64);
     }
 }

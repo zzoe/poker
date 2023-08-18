@@ -3,12 +3,12 @@ mod history;
 mod starter;
 
 use cards::{CardUI, Cards};
-use history::History;
+use history::{HisHand, History};
 use starter::PokerGame;
 
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
-use poker::{Game, Hand, DECK_OF_CARDS};
+use poker::{Hand, DECK_OF_CARDS};
 
 #[rustfmt::skip]
 #[derive(Clone, Debug, PartialEq, Routable)]
@@ -36,6 +36,7 @@ fn Main(cx: Scope) -> Element {
     use_shared_state_provider(cx, || RemainHand(DECK_OF_CARDS));
     use_shared_state_provider(cx, || OurHand(Hand::default()));
     use_shared_state_provider(cx, || OpponentHand(Hand::default()));
+    use_shared_state_provider(cx, || Vec::<HisHand>::new());
 
     render!(
         main { class: "h-screen bg-cover bg-white dark:bg-gray-600 p-6",

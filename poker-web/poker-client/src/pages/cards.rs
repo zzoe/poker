@@ -12,11 +12,13 @@ pub fn Cards(cx: Scope) -> Element {
     let card_click = |suit_card: SuitCard| {
         move |_| {
             match *game_state.read() {
-                GameState::OurHandEditing => our_hand.write().0.insert(suit_card),
-                GameState::OpponentHandEditing => opponent_hand.write().0.insert(suit_card),
+                GameState::OurHandEditing => our_hand.write().0.insert_suit_card(suit_card),
+                GameState::OpponentHandEditing => {
+                    opponent_hand.write().0.insert_suit_card(suit_card)
+                }
                 _ => return,
             }
-            remain_hand.write().0.remove(suit_card);
+            remain_hand.write().0.remove_suit_card(suit_card);
         }
     };
 

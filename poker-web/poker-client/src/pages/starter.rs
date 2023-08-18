@@ -5,6 +5,7 @@ use dioxus_router::prelude::*;
 use indextree::NodeId;
 use poker::{Game, Hand, DECK_OF_CARDS};
 
+use super::history::HisHand;
 use super::RemainHand;
 
 pub fn PokerGame(cx: Scope) -> Element {
@@ -15,7 +16,12 @@ pub fn PokerGame(cx: Scope) -> Element {
     let game_state = use_shared_state::<GameState>(cx).unwrap();
     let game = use_state::<Option<Game>>(cx, || None);
     let init_turn = use_state(cx, || 0_u8);
-    let node_id = use_state::<Option<NodeId>>(cx, || None);
+    let current_node_id = use_state::<Option<NodeId>>(cx, || None);
+    let no_solution_hidden = use_state(cx, || "hidden");
+    let our_played_hand = use_state(cx, || Hand::default());
+    let opponent_played_hands = use_state(cx, || Vec::<(NodeId, Hand)>::new());
+    let his_hand = use_shared_state::<Vec<HisHand>>(cx).unwrap();
+    let init_hand = use_state(cx, || (Hand::default(), Hand::default()));
 
     // 根据状态控制手牌选择框的样式和出牌区域的隐藏状态
     let (our_outline, opponent_outline, playing_hidden) = match *game_state.read() {
@@ -27,8 +33,8 @@ pub fn PokerGame(cx: Scope) -> Element {
     // 我方手牌展示
     let our_cards = our_hand.read().0.map(|c| {
         let on_click = move |_| {
-            our_hand.write().0.remove(c);
-            remain_hand.write().0.insert(c);
+            our_hand.write().0.remove_suit_card(c);
+            remain_hand.write().0.insert_suit_card(c);
         };
         rsx!(CardUI {
             key: "{u64::from(c)}",
@@ -41,8 +47,8 @@ pub fn PokerGame(cx: Scope) -> Element {
     // 对方手牌展示
     let opponent_cards = opponent_hand.read().0.map(|c| {
         let on_click = move |_| {
-            opponent_hand.write().0.remove(c);
-            remain_hand.write().0.insert(c);
+            opponent_hand.write().0.remove_suit_card(c);
+            remain_hand.write().0.insert_suit_card(c);
         };
         rsx!(CardUI {
             key: "{u64::from(c)}",
@@ -52,82 +58,122 @@ pub fn PokerGame(cx: Scope) -> Element {
         })
     });
 
-    //"无解提示"是否隐藏
-    let mut no_solution_hidden = "hidden";
-    let mut our_played_hand = Hand::default();
-    let mut opponent_choice = Vec::new();
-    if let Some(exact_game) = game.get().as_ref() {
-        if !exact_game.pass() {
-            //无解
-            no_solution_hidden = "";
-        } else {
-            //有解，解析展示数据
-            let mut exact_node_id = node_id.get().unwrap_or(exact_game.root);
-            if let Some(state) = exact_game.arena.get(exact_node_id) {
-                //我方出牌的状态
-                if state.get().turn() == 0 {
-                    // 从下一个节点取我方的action
-                    if let Some(n) = exact_node_id.children(&exact_game.arena).next() {
-                        exact_node_id = n;
-                    }
-                    if let Some(next_state) = exact_game.arena.get(exact_node_id) {
-                        let our_hand = &mut our_hand.write().0;
-                        for card in next_state.get().action_cards() {
-                            if let Some(suit_card) = our_hand.play_card(card) {
-                                our_played_hand.insert(suit_card);
-                            }
-                        }
-                    }
-                }
+    // 出牌
+    let play_next = || {
+        // log::debug!("begin play");
+        if let Some(inner_game) = game.current().as_ref() {
+            // log::debug!("play next");
+            let (our_played_cards, opponent_choice_cards) =
+                inner_game.action(*current_node_id.current());
 
-                // 对方出牌的状态
-                for n in exact_node_id.children(&exact_game.arena) {
-                    log::debug!("node: {n}");
-                    if let Some(next_state) = exact_game.arena.get(n) {
-                        let mut opponent_hand = opponent_hand.read().0;
-                        let mut opponent_played = Hand::default();
-                        for card in next_state.get().action_cards() {
-                            if let Some(suit_card) = opponent_hand.play_card(card) {
-                                opponent_played.insert(suit_card);
-                            }
-                        }
-                        opponent_choice.push((n, opponent_played));
-                    }
+            let mut our_played = Hand::default();
+            let hand = &mut our_hand.write().0;
+            for card in our_played_cards {
+                if let Some(suit_card) = hand.play_card(card) {
+                    our_played.insert_suit_card(suit_card);
+                    remain_hand.write().0.insert_suit_card(suit_card);
                 }
             }
+            if !our_played.is_empty() {
+                his_hand.write().push(HisHand::our(our_played));
+            }
+            our_played_hand.set(our_played);
+
+            let mut opponent_played = Vec::new();
+            for (node_id, opponent_played_cards) in opponent_choice_cards {
+                let mut opponent_played_hand = Hand::default();
+                let mut temp_hand = opponent_hand.read().0;
+                for card in opponent_played_cards {
+                    if let Some(suit_card) = temp_hand.play_card(card) {
+                        opponent_played_hand.insert_suit_card(suit_card);
+                    }
+                }
+                opponent_played.push((node_id, opponent_played_hand));
+            }
+            opponent_played_hands.set(opponent_played);
         }
-    }
+    };
 
-    // 我方打出的手牌
-    let our_played_cards = our_played_hand.map(|c| {
-        rsx!(CardUI {
-            key: "played_{u64::from(c)}",
-            suit_card: c,
-            containing: true
-        })
-    });
+    // 开始/重开
+    let start_game = move |_| {
+        *his_hand.write() = Vec::new();
+        let mut inner_game_state = game_state.write();
+        match *inner_game_state {
+            GameState::Playing => {
+                // log::debug!("重开");
+                *inner_game_state = GameState::OpponentHandEditing;
+                nav.replace(Route::Cards {});
+                our_hand.write().0 = init_hand.get().0;
+                opponent_hand.write().0 = init_hand.get().1;
+                if let Some(inner_game) = game.current().as_ref() {
+                    current_node_id.set(Some(inner_game.root));
+                }
+            }
+            _ => {
+                // log::debug!("开始");
+                *inner_game_state = GameState::Playing;
+                nav.replace(Route::History {});
+                let our_suit_hand = our_hand.read().0;
+                let opponent_suit_hand = opponent_hand.read().0;
+                init_hand.set((our_suit_hand, opponent_suit_hand));
 
-    // // 对方可以选择打出的所有手牌
-    // let opponent_played_hands =
-    //     opponent_choice
-    //         .iter()
-    //         .map(|(played_node_id, opponent_played_hand)| {
-    //             let opponent_played_cards = opponent_played_hand.map(|c| {
-    //                 rsx!(CardUI {
-    //                     key: "{u64::from(c)}",
-    //                     suit_card: c,
-    //                     containing: true
-    //                 })
-    //             });
+                match Game::new(vec![our_suit_hand, opponent_suit_hand], *init_turn.get()) {
+                    Ok(mut new_game) => {
+                        new_game.play();
+                        current_node_id.set(Some(new_game.root));
+                        game.set(Some(new_game));
+                    }
+                    Err(e) => {
+                        log::error!("创建游戏失败: {e}");
+                        return;
+                    }
+                }
 
-    //             let on_click = |_| node_id.set(Some(*played_node_id));
+                //出牌
+                play_next();
+            }
+        };
+    };
 
-    //             rsx!(div {
-    //                 class: "flex flex-row flex-wrap shadow grow pr-2 pb-2 rounded-xl",
-    //                 onclick: on_click,
-    //                 opponent_played_cards
-    //             })
-    //         });
+    // 对方出牌的展示
+    let opponent_played_ui = opponent_played_hands
+        .get()
+        .iter()
+        .map(|(node_id, played_hand)| {
+            let on_click = move |_| {
+                current_node_id.set(Some(*node_id));
+                opponent_hand.write().0.remove_hand(*played_hand);
+                remain_hand.write().0.insert_hand(*played_hand);
+                if !played_hand.is_empty(){
+                    his_hand.write().push(HisHand::opponent(*played_hand));
+                }
+                play_next();
+            };
+
+            let key = played_hand.value();
+            if played_hand.is_empty() {
+                rsx!(
+                    div {
+                        key: "{key}",
+                        class: "flex flex-row flex-wrap shadow w-full h-14 pr-2 pb-2 justify-center rounded-xl items-center bg-blue-100",
+                        style: "font-family: 楷体",
+                        onclick: on_click,
+                        "不要"
+                    }
+                )
+            } else {
+                rsx!(
+                    div {
+                        key: "{key}",
+                        class: "flex flex-row flex-wrap shadow w-full pr-2 pb-2 justify-center rounded-xl bg-blue-100",
+                        onclick: on_click,
+                        for c in played_hand {
+                            CardUI { key: "played_{u64::from(c)}", suit_card: c, containing: true }
+                        }
+                    }
+                )
+            }
+        });
 
     cx.render(rsx! {
         div { class: "grow flex flex-col space-y-6",
@@ -135,7 +181,7 @@ pub fn PokerGame(cx: Scope) -> Element {
             div { class: "flex flex-row space-x-2 min-h-16 items-center",
                 label { class: "whitespace-nowrap", "对方手牌：" }
                 div {
-                    class: "flex flex-wrap shadow grow h-full pr-2 pb-2 rounded-xl outline-none hover:outline-blue-400 {opponent_outline}",
+                    class: "flex flex-wrap shadow grow h-full pr-2 pb-2 justify-center rounded-xl outline-none hover:outline-blue-400 {opponent_outline} bg-blue-100",
                     id: "hands_of_player1",
                     onclick: |_| {
                         nav.replace(Route::Cards {});
@@ -157,7 +203,7 @@ pub fn PokerGame(cx: Scope) -> Element {
             div { class: "flex flex-row space-x-2 min-h-16 items-center",
                 label { class: "whitespace-nowrap", "我方手牌：" }
                 div {
-                    class: "flex flex-wrap shadow grow h-full pr-2 pb-2 rounded-xl outline-none hover:outline-blue-400 {our_outline}",
+                    class: "flex flex-wrap shadow grow h-full pr-2 pb-2 justify-center rounded-xl outline-none hover:outline-blue-400 {our_outline} bg-green-100",
                     id: "hands_of_player2",
                     onclick: |_| {
                         nav.replace(Route::Cards {});
@@ -176,7 +222,7 @@ pub fn PokerGame(cx: Scope) -> Element {
                 label { class: "whitespace-nowrap", r#for: "turn_of_player2", "我方先手" }
             }
 
-            div { class: "flex justify-center space-x-8",
+            div { class: "flex justify-evenly space-x-8",
                 button {
                     class: "w-32 py-2 px-4 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75",
                     onclick: |_| {
@@ -184,6 +230,7 @@ pub fn PokerGame(cx: Scope) -> Element {
                         opponent_hand.write().0 = Hand::default();
                         our_hand.write().0 = Hand::default();
                         remain_hand.write().0 = DECK_OF_CARDS;
+                        *his_hand.write() = Vec::new();
                         *game_state.write() = GameState::OpponentHandEditing;
                         game.set(None);
                     },
@@ -191,49 +238,35 @@ pub fn PokerGame(cx: Scope) -> Element {
                 }
                 button {
                     class: "w-32 py-2 px-4 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75",
-                    disabled: opponent_hand.read().0.is_empty() || our_hand.read().0.is_empty(),
-                    onclick: |_| {
-                        match Game::new(vec![our_hand.read().0, opponent_hand.read().0], *init_turn.get()) {
-                            Ok(mut new_game) => {
-                                nav.replace(Route::History {});
-                                *game_state.write() = GameState::Playing;
-                                new_game.play();
-                                node_id.set(Some(new_game.root));
-                                game.set(Some(new_game));
-                            }
-                            Err(e) => log::error!("创建游戏失败: {e}"),
-                        }
-                    },
-                    "开始/重开"
-                }
-                button {
-                    class: "w-32 py-2 px-4 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75",
-                    disabled: *game_state.read() != GameState::Playing,
-                    "悔一步"
+                    disabled: (opponent_hand.read().0.is_empty() || our_hand.read().0.is_empty())
+    && *game_state.read() != GameState::Playing,
+                    onclick: start_game,
+                    if *game_state.read() == GameState::Playing{
+                        "重开"
+                    }else{
+                        "开始"
+                    }
                 }
             }
 
             h1 { class: "text-9xl text-center {no_solution_hidden}", "无解" }
 
-            div { class: "flex flex-row space-x-2 min-h-16 items-center {playing_hidden}",
-                label { class: "whitespace-nowrap", "我方出牌：" }
-                div { class: "flex flex-row flex-wrap shadow grow pr-2 pb-2 rounded-xl",
-                    our_played_cards
-                }
-                for (played_node_id , played_hand) in opponent_choice {
-
-                    rsx!(div {
-                    class: "flex flex-row flex-wrap shadow grow pr-2 pb-2 rounded-xl",
-                    onclick: |_| node_id.set(Some(played_node_id.clone())),
-                    for c in played_hand{
-                    rsx!(CardUI {
-                        key: "{u64::from(c)}",
-                        suit_card: c,
-                        containing: true
+            div { class: "flex flex-col space-y-6 {playing_hidden}",
+                // label { class: "whitespace-nowrap", "我方出牌：" }
+                if our_played_hand.get().is_empty(){
+                    rsx!( div { class: "flex flex-row flex-wrap shadow w-full h-14 pr-2 pb-2 justify-center rounded-xl bg-green-100 items-center",
+                        style: "font-family: 楷体",
+                        "不要"
                     })
-                    }
-                })
+                }else{
+                    rsx!( div { class: "flex flex-row flex-wrap shadow w-full pr-2 pb-2 justify-center rounded-xl bg-green-100",
+                        for c in our_played_hand.get() {
+                            CardUI { key: "played_{u64::from(c)}", suit_card: c, containing: true }
+                        }
+                    })
                 }
+
+                opponent_played_ui
             }
         }
     })

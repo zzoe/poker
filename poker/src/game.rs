@@ -49,7 +49,8 @@ impl State {
     fn new(player_hand: Vec<impl Into<Hand>>, turn: u8) -> Result<State, Error> {
         let mut player = Vec::new();
         for s in player_hand {
-            player.push(s.into());
+            let hand: Hand = s.into();
+            player.push(hand.arrange());
         }
 
         Ok(State {
@@ -109,6 +110,62 @@ impl Game {
         }
     }
 
+    // 返回当前节点下的，我方出牌和对方所有出牌可能
+    pub fn action(&self, node_id: Option<NodeId>) -> (Vec<Card>, Vec<(NodeId, Vec<Card>)>) {
+        let mut our_played_cards = Vec::new();
+        let mut opponent_choice = Vec::new();
+        //有解，解析展示数据
+        let mut current_node_id = node_id.unwrap_or(self.root);
+        if let Some(state) = self.arena.get(current_node_id) {
+            //我方出牌的状态
+            if state.get().turn() == 0 {
+                // 从下一个节点取我方的action
+                if let Some(n) = current_node_id.children(&self.arena).next() {
+                    current_node_id = n;
+                }
+                if let Some(next_state) = self.arena.get(current_node_id) {
+                    // log::debug!(
+                    //     "我方 {current_node_id}: {}",
+                    //     next_state.get().action_string()
+                    // );
+                    our_played_cards = next_state.get().action_cards();
+                }
+            }
+
+            // 对方出牌的状态
+            for n in current_node_id.children(&self.arena) {
+                if let Some(next_state) = self.arena.get(n) {
+                    // log::debug!("next {n}: {}", next_state.get().action_string());
+                    opponent_choice.push((n, next_state.get().action_cards()));
+                }
+            }
+        }
+
+        (our_played_cards, opponent_choice)
+    }
+
+    pub fn print(&self) {
+        self.print_child(self.root, self.root)
+    }
+
+    fn print_child(&self, node_id: NodeId, parent_id: NodeId) {
+        if node_id.is_removed(&self.arena) {
+            return;
+        }
+        println!(
+            "{} {}: {}",
+            parent_id,
+            node_id,
+            self.arena.get(node_id).unwrap().get()
+        );
+
+        for child in node_id.children(&self.arena) {
+            self.print_child(child, node_id);
+        }
+    }
+}
+
+impl Game {
     fn expand_player1(&mut self, node_id: NodeId) -> Option<NodeId> {
         let children = node_id.children(&self.arena).collect::<Vec<NodeId>>();
         if children.is_empty() {
@@ -233,26 +290,6 @@ impl Game {
 
         self.arena.get_mut(current_node_id).unwrap().get_mut().pass = true;
         current_node_id.ancestors(&self.arena).nth(1)
-    }
-
-    pub fn print(&self) {
-        self.print_child(self.root, self.root)
-    }
-
-    fn print_child(&self, node_id: NodeId, parent_id: NodeId) {
-        if node_id.is_removed(&self.arena) {
-            return;
-        }
-        println!(
-            "{} {}: {}",
-            parent_id,
-            node_id,
-            self.arena.get(node_id).unwrap().get()
-        );
-
-        for child in node_id.children(&self.arena) {
-            self.print_child(child, node_id);
-        }
     }
 }
 
