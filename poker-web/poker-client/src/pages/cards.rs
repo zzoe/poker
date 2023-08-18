@@ -30,16 +30,6 @@ pub fn Cards(cx: Scope) -> Element {
             )
         })
         .map(|(key, suit_card)| {
-            // 回调是作为参数传递给CardUI的，如果直接写在rsx!里面，会导致suit_card值异常
-            // let on_click = move |_| {
-            //     match *game_state.read() {
-            //         GameState::OurHandEditing => our_hand.write().0.insert(suit_card),
-            //         GameState::OpponentHandEditing => opponent_hand.write().0.insert(suit_card),
-            //         _ => return,
-            //     }
-            //     remain_hand.write().0.remove(suit_card);
-            // };
-
             rsx!(CardUI {
                 key: "{key}",
                 suit_card: suit_card,

@@ -40,7 +40,7 @@ fn Main(cx: Scope) -> Element {
 
     render!(
         main { class: "h-screen bg-cover bg-white dark:bg-gray-600 p-6",
-            section { class: "flex h-full w-full justify-center m-0 space-x-4",
+            section { class: "flex h-full min-w-full justify-center m-0 space-x-4",
                 PokerGame {}
                 Outlet::<Route> {}
             }

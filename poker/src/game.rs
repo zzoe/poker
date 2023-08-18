@@ -19,7 +19,7 @@ pub(crate) enum Carry {
     Pair,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct State {
     /// 当前回合需要应对的牌
     action: Action,
@@ -46,7 +46,7 @@ impl Display for State {
 }
 
 impl State {
-    fn new(player_hand: Vec<impl Into<Hand>>, turn: u8) -> Result<State, Error> {
+    pub fn new(player_hand: Vec<impl Into<Hand>>, turn: u8) -> Result<State, Error> {
         let mut player = Vec::new();
         for s in player_hand {
             let hand: Hand = s.into();
@@ -74,6 +74,7 @@ impl State {
     }
 }
 
+#[derive(Clone)]
 pub struct Game {
     pub arena: Arena<State>,
     pub root: NodeId,
@@ -81,9 +82,15 @@ pub struct Game {
 
 impl Game {
     pub fn new(player_hand: Vec<impl Into<Hand>>, turn: u8) -> Result<Self, Error> {
+        Ok(Game::from_state(State::new(player_hand, turn)?))
+    }
+
+    pub fn from_state(state: State) -> Self {
         let mut arena = Arena::new();
-        let root = arena.new_node(State::new(player_hand, turn)?);
-        Ok(Game { arena, root })
+        let root = arena.new_node(state);
+        let mut game = Game { arena, root };
+        game.play();
+        game
     }
 
     pub fn pass(&self) -> bool {
@@ -93,30 +100,23 @@ impl Game {
             .unwrap_or_default()
     }
 
-    pub fn play(&mut self) {
-        let mut next_node_id = Some(self.root);
-        while let Some(node_id) = next_node_id {
-            let state = self.arena.get(node_id).unwrap().get();
-            next_node_id = if !state.player.is_empty() {
-                // node_id: 当前节点有player
-                self.expand(node_id)
-            } else if state.turn == 0 {
-                // node_id: 当前节点没有player, turn: 0
-                self.expand_player1(node_id)
-            } else {
-                // node_id: 当前节点没有player, turn != 0
-                self.expand_other_player(node_id)
-            };
-        }
-    }
-
     // 返回当前节点下的，我方出牌和对方所有出牌可能
     pub fn action(&self, node_id: Option<NodeId>) -> (Vec<Card>, Vec<(NodeId, Vec<Card>)>) {
         let mut our_played_cards = Vec::new();
         let mut opponent_choice = Vec::new();
-        //有解，解析展示数据
         let mut current_node_id = node_id.unwrap_or(self.root);
+
+        log::debug!(
+            "current_node_id: {}, removed: {}",
+            current_node_id,
+            current_node_id.is_removed(&self.arena)
+        );
+        if current_node_id.is_removed(&self.arena) {
+            return (our_played_cards, opponent_choice);
+        }
+
         if let Some(state) = self.arena.get(current_node_id) {
+            log::debug!("turn: {}", state.get().turn());
             //我方出牌的状态
             if state.get().turn() == 0 {
                 // 从下一个节点取我方的action
@@ -132,8 +132,10 @@ impl Game {
                 }
             }
 
+            log::debug!("3");
             // 对方出牌的状态
             for n in current_node_id.children(&self.arena) {
+                log::debug!("4");
                 if let Some(next_state) = self.arena.get(n) {
                     // log::debug!("next {n}: {}", next_state.get().action_string());
                     opponent_choice.push((n, next_state.get().action_cards()));
@@ -166,6 +168,23 @@ impl Game {
 }
 
 impl Game {
+    fn play(&mut self) {
+        let mut next_node_id = Some(self.root);
+        while let Some(node_id) = next_node_id {
+            let state = self.arena.get(node_id).unwrap().get();
+            next_node_id = if !state.player.is_empty() {
+                // node_id: 当前节点有player
+                self.expand(node_id)
+            } else if state.turn == 0 {
+                // node_id: 当前节点已经展开过, turn: 0
+                self.expand_player1(node_id)
+            } else {
+                // node_id: 当前节点已经展开过, turn != 0
+                self.expand_other_player(node_id)
+            };
+        }
+    }
+
     fn expand_player1(&mut self, node_id: NodeId) -> Option<NodeId> {
         let children = node_id.children(&self.arena).collect::<Vec<NodeId>>();
         if children.is_empty() {
@@ -259,7 +278,11 @@ impl Game {
             last_node_id,
             next_node_id
         );
-        last_node_id.remove_subtree(&mut self.arena);
+
+        //不要删掉root节点
+        if self.root != last_node_id {
+            last_node_id.remove_subtree(&mut self.arena);
+        }
         next_node_id
     }
 

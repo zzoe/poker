@@ -25,7 +25,7 @@ fn interactive() -> Result<()> {
             .map(|t| t != 0)
             .unwrap_or_default();
 
-        let mut game = match poker::Game::new(
+        let game = match poker::Game::new(
             vec![hand_own.as_str(), hand_opponent.as_str()],
             turn.then(|| 1).unwrap_or_default(),
         ) {
@@ -35,8 +35,6 @@ fn interactive() -> Result<()> {
                 continue;
             }
         };
-
-        game.play();
 
         if game.pass() {
             std::io::stdout().write_all("有必胜的方案\n".as_ref())?;

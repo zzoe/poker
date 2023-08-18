@@ -9,7 +9,7 @@ module.exports = {
   ],
   theme: {
     minWidth: {
-      53: "13.25rem",
+      88: "22rem",
     },
     minHeight: {
       16: "4rem",

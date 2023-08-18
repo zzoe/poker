@@ -7,13 +7,12 @@ fn play() {
         .target(env_logger::Target::Stdout)
         .init();
 
-    let mut game = match poker::Game::new(vec!["3357899k", "34668jq"], 1) {
+    let game = match poker::Game::new(vec!["3357899k", "34668jq"], 1) {
         Ok(game) => game,
         Err(e) => {
             log::error!("{}", e);
             return;
         }
     };
-    game.play();
     game.print();
 }
