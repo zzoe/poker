@@ -1,6 +1,6 @@
 [package]
-name = "dioxus-starter"
-version = "0.2.1"
+name = "poker-client"
+version = "0.2.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,8 +8,13 @@ edition = "2021"
 [dependencies]
 dioxus = { version = "*" }
 dioxus-router = { version = "*" }
-dioxus-web = { version = "*" }
 indextree = "*"
 log = "*"
 poker = { path = "../../poker" }
 wasm-logger = "*"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+dioxus-desktop = { version = "*" }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+dioxus-web = { version = "*" }

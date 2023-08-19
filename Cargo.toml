@@ -4,6 +4,7 @@ members = [
     "poker_cli",
     #    "poker_egui",
     #    "poker-slint",
-    "poker-web/poker-client",
     "poker-web/poker-server",
 ]
+
+exclude = ["poker-web/poker-client"]

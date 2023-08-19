@@ -190,7 +190,7 @@ pub fn PokerGame(cx: Scope) -> Element {
                 rsx!(
                     div {
                         key: "{key}",
-                        class: "flex flex-row flex-wrap shadow w-full h-14 pr-2 pb-2 justify-center rounded-xl items-center bg-blue-100",
+                        class: "flex flex-row flex-wrap shadow min-w-full h-14 pr-2 pb-2 justify-center rounded-xl items-center bg-blue-100",
                         style: "font-family: 楷体",
                         onclick: on_click,
                         "不要"
@@ -200,7 +200,7 @@ pub fn PokerGame(cx: Scope) -> Element {
                 rsx!(
                     div {
                         key: "{key}",
-                        class: "flex flex-row flex-wrap shadow w-full pr-2 pb-2 justify-center rounded-xl bg-blue-100",
+                        class: "flex flex-row flex-wrap shadow min-w-full pr-2 pb-2 justify-center rounded-xl bg-blue-100",
                         onclick: on_click,
                         for c in played_hand {
                             CardUI { key: "played_{u64::from(c)}", suit_card: c, containing: true }
@@ -211,7 +211,7 @@ pub fn PokerGame(cx: Scope) -> Element {
         });
 
     cx.render(rsx! {
-        div { class: "grow flex flex-col space-y-6 p-1 overflow-auto",
+        div { class: "grow flex flex-col space-y-6 p-1",
             div { class: "flex flex-row space-x-2 min-h-16 items-center",
                 label { class: "whitespace-nowrap", "对方手牌：" }
                 div {
@@ -284,7 +284,7 @@ pub fn PokerGame(cx: Scope) -> Element {
             }
 
             div {
-                class: "flex flex-row flex-wrap shadow w-full pr-2 pb-2 justify-center rounded-xl bg-red-100 items-center {no_solution_hidden}",
+                class: "flex flex-row flex-wrap shadow min-w-full pr-2 pb-2 justify-center rounded-xl bg-red-100 items-center {no_solution_hidden}",
                 style: "font-family: 楷体",
                 h1 { class: "text-9xl text-center", "无解" }
             }
@@ -292,12 +292,12 @@ pub fn PokerGame(cx: Scope) -> Element {
             div { class: "flex flex-col space-y-6 {playing_hidden}",
                 // label { class: "whitespace-nowrap", "我方出牌：" }
                 if our_played_hand.get().is_empty(){
-                    rsx!( div { class: "flex flex-row flex-wrap shadow w-full h-14 pr-2 pb-2 justify-center rounded-xl bg-green-100 items-center",
+                    rsx!( div { class: "flex flex-row flex-wrap shadow min-w-full h-14 pr-2 pb-2 justify-center rounded-xl bg-green-100 items-center",
                         style: "font-family: 楷体",
                         "不要"
                     })
                 }else{
-                    rsx!( div { class: "flex flex-row flex-wrap shadow w-full pr-2 pb-2 justify-center rounded-xl bg-green-100",
+                    rsx!( div { class: "flex flex-row flex-wrap shadow min-w-full pr-2 pb-2 justify-center rounded-xl bg-green-100",
                         for c in our_played_hand.get() {
                             CardUI { key: "played_{u64::from(c)}", suit_card: c, containing: true }
                         }

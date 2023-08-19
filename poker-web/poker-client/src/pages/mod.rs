@@ -39,8 +39,8 @@ fn Main(cx: Scope) -> Element {
     use_shared_state_provider(cx, || Vec::<HisHand>::new());
 
     render!(
-        main { class: "h-screen bg-cover bg-white dark:bg-gray-600 p-6",
-            section { class: "flex h-full min-w-full justify-center m-0 space-x-4",
+        main { class: "min-w-200 min-h-fit bg-cover bg-white p-6",
+            section { class: "flex min-h-full min-w-full justify-center m-0 space-x-4",
                 PokerGame {}
                 Outlet::<Route> {}
             }

@@ -10,6 +10,10 @@ module.exports = {
   theme: {
     minWidth: {
       88: "22rem",
+      200: "50rem",
+    },
+    maxWidth: {
+      44: "11rem",
     },
     minHeight: {
       16: "4rem",

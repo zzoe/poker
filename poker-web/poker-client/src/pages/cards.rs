@@ -42,7 +42,7 @@ pub fn Cards(cx: Scope) -> Element {
     let red_joker = SuitCard::new(Card::RedJoker, 0);
 
     cx.render(rsx! {
-        div { class: "flex-shrink-0 flex flex-wrap justify-evenly ml-8 w-44",
+        div { class: "flex-shrink-0 flex flex-wrap justify-evenly ml-8 max-w-44",
             cards_except_joker,
             div { class: "w-9" }
             CardUI {

@@ -30,7 +30,7 @@ pub fn History(cx: Scope) -> Element {
         };
 
         rsx!(
-            div { class: "flex flex-row flex-wrap shadow w-full pr-2 pb-2 justify-center rounded-xl {bg_color}",
+            div { class: "flex flex-row flex-wrap shadow min-w-full pr-2 pb-2 justify-center rounded-xl {bg_color}",
                 for c in his_hand.hand {
                     CardUI { key: "his_{u64::from(c)}", suit_card: c, containing: true }
                 }
