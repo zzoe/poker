@@ -71,7 +71,7 @@ pnpm tailwindcss init
 1. tailwindcss 在 poker-client 目录
 
 ```
-pnpm dev
+pnpm watch
 ```
 
 ##### web

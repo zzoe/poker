@@ -19,8 +19,8 @@ pub fn PokerGame(cx: Scope) -> Element {
     let game = use_state::<Option<Game>>(cx, || None);
     let init_turn = use_state(cx, || 0_u8);
     let current_node_id = use_state::<Option<NodeId>>(cx, || None);
-    let our_played_hand = use_state(cx, || Hand::default());
-    let opponent_played_hands = use_state(cx, || Vec::<(NodeId, Hand)>::new());
+    let our_played_hand = use_state(cx, Hand::default);
+    let opponent_played_hands = use_state(cx, Vec::<(NodeId, Hand)>::new);
     let init_hand = use_state(cx, || (Hand::default(), Hand::default(), 0_u8));
     let no_solution = use_state(cx, || false);
 
@@ -160,11 +160,10 @@ pub fn PokerGame(cx: Scope) -> Element {
                 }
                 init_hand.set((our_suit_hand, opponent_suit_hand, current_turn));
 
+                no_solution.set(!game_pass);
                 if game_pass {
                     //出牌
                     play_next();
-                } else {
-                    no_solution.set(true);
                 }
             }
         };
