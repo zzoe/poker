@@ -89,12 +89,12 @@ pub fn CardUI<'a>(cx: Scope<'a, CardProps<'a>>) -> Element {
     };
 
     let bg = (!cx.props.containing)
-        .then(|| "bg-stone-300")
+        .then_some("bg-stone-300")
         .unwrap_or_default();
 
     cx.render(rsx! {
         div {
-            class: "flex relative shadow justify-center items-center ml-2 mt-2 w-9 h-11 text-2xl cursor-default outline outline-amber-200 hover:bg-sky-100 {color} {bg}",
+            class: "flex relative shadow justify-center items-center ml-2 mt-2 w-9 h-11 text-2xl cursor-default select-none outline outline-amber-200 hover:bg-sky-100 {color} {bg}",
             style: " font-family: {card_font}",
             onclick: move |event| {
                 if let Some(on_click) = cx.props.on_click.as_ref() {

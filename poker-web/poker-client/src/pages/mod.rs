@@ -36,7 +36,7 @@ fn Main(cx: Scope) -> Element {
     use_shared_state_provider(cx, || RemainHand(DECK_OF_CARDS));
     use_shared_state_provider(cx, || OurHand(Hand::default()));
     use_shared_state_provider(cx, || OpponentHand(Hand::default()));
-    use_shared_state_provider(cx, || Vec::<HisHand>::new());
+    use_shared_state_provider(cx, Vec::<HisHand>::new);
 
     render!(
         main { class: "min-w-200 min-h-fit bg-cover bg-white p-6",
