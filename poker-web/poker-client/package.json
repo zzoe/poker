@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "css": "tailwindcss -i ./input.css -o ./public/tailwind.css",
     "watch": "tailwindcss -i ./input.css -o ./public/tailwind.css --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,6 +12,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "tailwindcss": "latest"
+    "tailwindcss": "^3.4.3"
   }
 }
