@@ -85,9 +85,9 @@ pub(crate) enum Action {
     Rocket,
 }
 
-impl Into<Vec<Card>> for Action {
-    fn into(self) -> Vec<Card> {
-        match self {
+impl From<Action> for Vec<Card> {
+    fn from(action: Action) -> Self {
+        match action {
             Action::None => Vec::new(),
             Action::Single(c) => vec![c],
             Action::Straight5(c) => {
