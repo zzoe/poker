@@ -4,7 +4,6 @@ use crate::action::Action;
 use crate::card::{Card, SuitCard};
 use crate::game::{Carry, StraightType};
 
-#[allow(dead_code)]
 /// 用u64表示一副牌，每16位代表一个花色，分别是桃仙梅方；用后15位分别表示大王、小王、2、A、K、Q、J、10、9、8、7、6、5、4、3
 pub const DECK_OF_CARDS: Hand =
     Hand(0b0001111111111111000111111111111100011111111111110111111111111111);
@@ -253,7 +252,7 @@ impl Hand {
         let mut card = Self::plus(card);
 
         loop {
-            let Some(c) = card else{
+            let Some(c) = card else {
                 return actions;
             };
 
@@ -277,7 +276,7 @@ impl Hand {
         let mut straight_start = card.unwrap();
 
         for _ in 0..length {
-            let Some(c) = card else{ return actions };
+            let Some(c) = card else { return actions };
             straight |= c as u16;
             card = c.plus();
         }
@@ -410,7 +409,8 @@ impl Hand {
             }
             card = c.plus();
         }
-        return actions;
+
+        actions
     }
 
     fn follow_triple(&self, card: Option<&Card>, carry: Carry) -> Vec<(Action, Hand)> {
@@ -447,7 +447,7 @@ impl Hand {
             card = c.plus();
         }
 
-        return actions;
+        actions
     }
 
     fn follow_triple_single(&self, card: &Card) -> Vec<(Card, Hand)> {
@@ -672,9 +672,7 @@ impl Iterator for Hand {
         loop {
             match self.play_card(card) {
                 None => {
-                    let Some(next_card) = card.minus() else{
-                        return None;
-                    };
+                    let next_card = card.minus()?;
                     card = next_card;
                 }
                 s => return s,

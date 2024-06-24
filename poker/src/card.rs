@@ -13,8 +13,8 @@ pub enum SuitCard {
     Diamonds(Card),
 }
 
-impl SuitCard{
-    pub fn new(card: Card, suit: u8) -> Self{
+impl SuitCard {
+    pub fn new(card: Card, suit: u8) -> Self {
         match suit {
             3 => SuitCard::Spades(card),
             2 => SuitCard::Hearts(card),
@@ -25,13 +25,13 @@ impl SuitCard{
     }
 }
 
-impl From<SuitCard> for u64{
+impl From<SuitCard> for u64 {
     fn from(suit_card: SuitCard) -> Self {
         match suit_card {
             SuitCard::Spades(card) => {
                 // log::debug!("{:064b}", card as u64);
                 (card as u64) << 48
-            },
+            }
             SuitCard::Hearts(card) => (card as u64) << 32,
             SuitCard::Clubs(card) => (card as u64) << 16,
             SuitCard::Diamonds(card) => card as u64,
@@ -68,14 +68,14 @@ impl Card {
             '7' => Ok(Card::Seven),
             '8' => Ok(Card::Eight),
             '9' => Ok(Card::Nine),
-            '0' => Ok(Card::Ten),
+            't' | 'T' => Ok(Card::Ten),
             'j' | 'J' => Ok(Card::Jack),
             'q' | 'Q' => Ok(Card::Queen),
             'k' | 'K' => Ok(Card::King),
             '1' | 'a' | 'A' => Ok(Card::Ace),
             '2' => Ok(Card::Two),
-            'b' | 'B' => Ok(Card::BlackJoker),
-            'r' | 'R' => Ok(Card::RedJoker),
+            'x' | 'X' => Ok(Card::BlackJoker),
+            'd' | 'D' => Ok(Card::RedJoker),
             _ => Err(Error::InvalidCardValue(c.to_string())),
         }
     }
@@ -128,14 +128,14 @@ impl Display for Card {
             Card::Seven => '7',
             Card::Eight => '8',
             Card::Nine => '9',
-            Card::Ten => '0',
+            Card::Ten => 'T',
             Card::Jack => 'J',
             Card::Queen => 'Q',
             Card::King => 'K',
             Card::Ace => 'A',
             Card::Two => '2',
-            Card::BlackJoker => 'B',
-            Card::RedJoker => 'R',
+            Card::BlackJoker => 'X',
+            Card::RedJoker => 'D',
         };
         write!(f, "{}", s)
     }
