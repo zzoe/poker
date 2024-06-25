@@ -120,54 +120,54 @@ impl Hand {
                 self.follow_any()
             }
             Action::Single(card) => self.follow_single(Some(card)),
-            Action::Straight5(c) => self.follow_straight(StraightType::Single, Some(c), 5),
-            Action::Straight6(c) => self.follow_straight(StraightType::Single, Some(c), 6),
-            Action::Straight7(c) => self.follow_straight(StraightType::Single, Some(c), 7),
-            Action::Straight8(c) => self.follow_straight(StraightType::Single, Some(c), 8),
-            Action::Straight9(c) => self.follow_straight(StraightType::Single, Some(c), 9),
-            Action::Straight10(c) => self.follow_straight(StraightType::Single, Some(c), 10),
-            Action::Straight11(c) => self.follow_straight(StraightType::Single, Some(c), 11),
-            Action::Straight12 => Vec::new(),
+            Action::Sequence5(c) => self.follow_straight(StraightType::Single, Some(c), 5),
+            Action::Sequence6(c) => self.follow_straight(StraightType::Single, Some(c), 6),
+            Action::Sequence7(c) => self.follow_straight(StraightType::Single, Some(c), 7),
+            Action::Sequence8(c) => self.follow_straight(StraightType::Single, Some(c), 8),
+            Action::Sequence9(c) => self.follow_straight(StraightType::Single, Some(c), 9),
+            Action::Sequence10(c) => self.follow_straight(StraightType::Single, Some(c), 10),
+            Action::Sequence11(c) => self.follow_straight(StraightType::Single, Some(c), 11),
+            Action::Sequence12 => Vec::new(),
             Action::Pair(c) => self.follow_pair(Some(c)),
-            Action::PairStraight3(c) => self.follow_straight(StraightType::Pair, Some(c), 3),
-            Action::PairStraight4(c) => self.follow_straight(StraightType::Pair, Some(c), 4),
-            Action::PairStraight5(c) => self.follow_straight(StraightType::Pair, Some(c), 5),
-            Action::PairStraight6(c) => self.follow_straight(StraightType::Pair, Some(c), 6),
-            Action::PairStraight7(c) => self.follow_straight(StraightType::Pair, Some(c), 7),
-            Action::PairStraight8(c) => self.follow_straight(StraightType::Pair, Some(c), 8),
-            Action::PairStraight9(c) => self.follow_straight(StraightType::Pair, Some(c), 9),
-            Action::PairStraight10(c) => self.follow_straight(StraightType::Pair, Some(c), 10),
-            Action::Triple(c) => self.follow_triple(Some(c), Carry::None),
-            Action::TripleSingle(c, _) => self.follow_triple(Some(c), Carry::Single),
-            Action::TriplePair(c, _) => self.follow_triple(Some(c), Carry::Pair),
-            Action::TripleStraight2(c) => self.follow_straight(StraightType::Triple, Some(c), 2),
-            Action::TripleStraight2Single(c, _, _) => {
+            Action::PairSequence3(c) => self.follow_straight(StraightType::Pair, Some(c), 3),
+            Action::PairSequence4(c) => self.follow_straight(StraightType::Pair, Some(c), 4),
+            Action::PairSequence5(c) => self.follow_straight(StraightType::Pair, Some(c), 5),
+            Action::PairSequence6(c) => self.follow_straight(StraightType::Pair, Some(c), 6),
+            Action::PairSequence7(c) => self.follow_straight(StraightType::Pair, Some(c), 7),
+            Action::PairSequence8(c) => self.follow_straight(StraightType::Pair, Some(c), 8),
+            Action::PairSequence9(c) => self.follow_straight(StraightType::Pair, Some(c), 9),
+            Action::PairSequence10(c) => self.follow_straight(StraightType::Pair, Some(c), 10),
+            Action::Triplet(c) => self.follow_triple(Some(c), Carry::None),
+            Action::TripletSingle(c, _) => self.follow_triple(Some(c), Carry::Single),
+            Action::TripletPair(c, _) => self.follow_triple(Some(c), Carry::Pair),
+            Action::TripletSequence2(c) => self.follow_straight(StraightType::Triple, Some(c), 2),
+            Action::TripletSequence2Single(c, _, _) => {
                 self.follow_triple_straight(Some(c), Carry::Single, 2)
             }
-            Action::TripleStraight2Pair(c, _, _) => {
+            Action::TripletSequence2Pair(c, _, _) => {
                 self.follow_triple_straight(Some(c), Carry::Pair, 2)
             }
-            Action::TripleStraight3(c) => self.follow_straight(StraightType::Triple, Some(c), 3),
-            Action::TripleStraight3Single(c, ..) => {
+            Action::TripletSequence3(c) => self.follow_straight(StraightType::Triple, Some(c), 3),
+            Action::TripletSequence3Single(c, ..) => {
                 self.follow_triple_straight(Some(c), Carry::Single, 3)
             }
-            Action::TripleStraight3Pair(c, _, _, _) => {
+            Action::TripletSequence3Pair(c, _, _, _) => {
                 self.follow_triple_straight(Some(c), Carry::Pair, 3)
             }
-            Action::TripleStraight4(c) => self.follow_straight(StraightType::Triple, Some(c), 4),
-            Action::TripleStraight4Single(c, _, _, _, _) => {
+            Action::TripletSequence4(c) => self.follow_straight(StraightType::Triple, Some(c), 4),
+            Action::TripletSequence4Single(c, _, _, _, _) => {
                 self.follow_triple_straight(Some(c), Carry::Single, 4)
             }
-            Action::TripleStraight4Pair(c, _, _, _, _) => {
+            Action::TripletSequence4Pair(c, _, _, _, _) => {
                 self.follow_triple_straight(Some(c), Carry::Pair, 4)
             }
-            Action::TripleStraight5(c) => self.follow_straight(StraightType::Triple, Some(c), 5),
-            Action::TripleStraight5Single(c, _, _, _, _, _) => {
+            Action::TripletSequence5(c) => self.follow_straight(StraightType::Triple, Some(c), 5),
+            Action::TripletSequence5Single(c, _, _, _, _, _) => {
                 self.follow_triple_straight(Some(c), Carry::Single, 5)
             }
-            Action::TripleStraight6(c) => self.follow_straight(StraightType::Triple, Some(c), 6),
-            Action::BombSingle(c, _, _) => self.follow_bomb_carry(Some(c), Carry::Single),
-            Action::BombPair(c, _, _) => self.follow_bomb_carry(Some(c), Carry::Pair),
+            Action::TripletSequence6(c) => self.follow_straight(StraightType::Triple, Some(c), 6),
+            Action::QuadSingle(c, _, _) => self.follow_bomb_carry(Some(c), Carry::Single),
+            Action::QuadPair(c, _, _) => self.follow_bomb_carry(Some(c), Carry::Pair),
             Action::Bomb(c) => {
                 not_bomb = false;
                 self.follow_bomb(Some(c))
@@ -315,14 +315,14 @@ impl Hand {
                 card = card.plus().unwrap();
             }
             match length {
-                5 => actions.push((Action::Straight5(straight_start), hand)),
-                6 => actions.push((Action::Straight6(straight_start), hand)),
-                7 => actions.push((Action::Straight7(straight_start), hand)),
-                8 => actions.push((Action::Straight8(straight_start), hand)),
-                9 => actions.push((Action::Straight9(straight_start), hand)),
-                10 => actions.push((Action::Straight10(straight_start), hand)),
-                11 => actions.push((Action::Straight11(straight_start), hand)),
-                12 => actions.push((Action::Straight12, hand)),
+                5 => actions.push((Action::Sequence5(straight_start), hand)),
+                6 => actions.push((Action::Sequence6(straight_start), hand)),
+                7 => actions.push((Action::Sequence7(straight_start), hand)),
+                8 => actions.push((Action::Sequence8(straight_start), hand)),
+                9 => actions.push((Action::Sequence9(straight_start), hand)),
+                10 => actions.push((Action::Sequence10(straight_start), hand)),
+                11 => actions.push((Action::Sequence11(straight_start), hand)),
+                12 => actions.push((Action::Sequence12, hand)),
                 _ => unreachable!(),
             }
         }
@@ -347,14 +347,14 @@ impl Hand {
                 card = card.plus().unwrap();
             }
             match length {
-                3 => actions.push((Action::PairStraight3(straight_start), hand)),
-                4 => actions.push((Action::PairStraight4(straight_start), hand)),
-                5 => actions.push((Action::PairStraight5(straight_start), hand)),
-                6 => actions.push((Action::PairStraight6(straight_start), hand)),
-                7 => actions.push((Action::PairStraight7(straight_start), hand)),
-                8 => actions.push((Action::PairStraight8(straight_start), hand)),
-                9 => actions.push((Action::PairStraight9(straight_start), hand)),
-                10 => actions.push((Action::PairStraight10(straight_start), hand)),
+                3 => actions.push((Action::PairSequence3(straight_start), hand)),
+                4 => actions.push((Action::PairSequence4(straight_start), hand)),
+                5 => actions.push((Action::PairSequence5(straight_start), hand)),
+                6 => actions.push((Action::PairSequence6(straight_start), hand)),
+                7 => actions.push((Action::PairSequence7(straight_start), hand)),
+                8 => actions.push((Action::PairSequence8(straight_start), hand)),
+                9 => actions.push((Action::PairSequence9(straight_start), hand)),
+                10 => actions.push((Action::PairSequence10(straight_start), hand)),
                 _ => unreachable!(),
             }
         }
@@ -380,11 +380,11 @@ impl Hand {
                 card = card.plus().unwrap();
             }
             match length {
-                2 => actions.push((Action::TripleStraight2(straight_start), hand)),
-                3 => actions.push((Action::TripleStraight3(straight_start), hand)),
-                4 => actions.push((Action::TripleStraight4(straight_start), hand)),
-                5 => actions.push((Action::TripleStraight5(straight_start), hand)),
-                6 => actions.push((Action::TripleStraight6(straight_start), hand)),
+                2 => actions.push((Action::TripletSequence2(straight_start), hand)),
+                3 => actions.push((Action::TripletSequence3(straight_start), hand)),
+                4 => actions.push((Action::TripletSequence4(straight_start), hand)),
+                5 => actions.push((Action::TripletSequence5(straight_start), hand)),
+                6 => actions.push((Action::TripletSequence6(straight_start), hand)),
                 _ => unreachable!(),
             }
         }
@@ -426,16 +426,16 @@ impl Hand {
                 hand.play_card(c);
                 match carry {
                     Carry::None => {
-                        actions.push((Action::Triple(c), hand));
+                        actions.push((Action::Triplet(c), hand));
                     }
                     Carry::Single => {
                         for (carry, hand) in hand.follow_triple_single(&c) {
-                            actions.push((Action::TripleSingle(c, carry), hand))
+                            actions.push((Action::TripletSingle(c, carry), hand))
                         }
                     }
                     Carry::Pair => {
                         for (carry, hand) in hand.follow_triple_pair(&c) {
-                            actions.push((Action::TriplePair(c, carry), hand))
+                            actions.push((Action::TripletPair(c, carry), hand))
                         }
                     }
                 }
@@ -487,11 +487,11 @@ impl Hand {
 
         for (action, hand) in hand.follow_straight(StraightType::Triple, card, length) {
             let straight_start = match action {
-                Action::TripleStraight2(c) => c,
-                Action::TripleStraight3(c) => c,
-                Action::TripleStraight4(c) => c,
-                Action::TripleStraight5(c) => c,
-                Action::TripleStraight6(c) => c,
+                Action::TripletSequence2(c) => c,
+                Action::TripletSequence3(c) => c,
+                Action::TripletSequence4(c) => c,
+                Action::TripletSequence5(c) => c,
+                Action::TripletSequence6(c) => c,
                 _ => unreachable!(),
             };
             match carry {
@@ -501,15 +501,15 @@ impl Hand {
                     for (a, h) in carry_actions {
                         match length {
                             2 => actions.push((
-                                Action::TripleStraight2Single(straight_start, a[0], a[1]),
+                                Action::TripletSequence2Single(straight_start, a[0], a[1]),
                                 h,
                             )),
                             3 => actions.push((
-                                Action::TripleStraight3Single(straight_start, a[0], a[1], a[2]),
+                                Action::TripletSequence3Single(straight_start, a[0], a[1], a[2]),
                                 h,
                             )),
                             4 => actions.push((
-                                Action::TripleStraight4Single(
+                                Action::TripletSequence4Single(
                                     straight_start,
                                     a[0],
                                     a[1],
@@ -519,7 +519,7 @@ impl Hand {
                                 h,
                             )),
                             5 => actions.push((
-                                Action::TripleStraight5Single(
+                                Action::TripletSequence5Single(
                                     straight_start,
                                     a[0],
                                     a[1],
@@ -538,14 +538,22 @@ impl Hand {
                     Self::carry_pair(&mut carry_actions, Vec::new(), hand, length);
                     for (a, h) in carry_actions {
                         match length {
-                            2 => actions
-                                .push((Action::TripleStraight2Pair(straight_start, a[0], a[1]), h)),
+                            2 => actions.push((
+                                Action::TripletSequence2Pair(straight_start, a[0], a[1]),
+                                h,
+                            )),
                             3 => actions.push((
-                                Action::TripleStraight3Pair(straight_start, a[0], a[1], a[2]),
+                                Action::TripletSequence3Pair(straight_start, a[0], a[1], a[2]),
                                 h,
                             )),
                             4 => actions.push((
-                                Action::TripleStraight4Pair(straight_start, a[0], a[1], a[2], a[3]),
+                                Action::TripletSequence4Pair(
+                                    straight_start,
+                                    a[0],
+                                    a[1],
+                                    a[2],
+                                    a[3],
+                                ),
                                 h,
                             )),
                             _ => unreachable!(),
@@ -613,13 +621,13 @@ impl Hand {
                     Carry::Single => {
                         Self::carry_single(&mut carry_actions, Vec::new(), hand, 2);
                         for (a, h) in carry_actions {
-                            actions.push((Action::BombSingle(c, a[0], a[1]), h));
+                            actions.push((Action::QuadSingle(c, a[0], a[1]), h));
                         }
                     }
                     Carry::Pair => {
                         Self::carry_pair(&mut carry_actions, Vec::new(), hand, 2);
                         for (a, h) in carry_actions {
-                            actions.push((Action::BombPair(c, a[0], a[1]), h));
+                            actions.push((Action::QuadPair(c, a[0], a[1]), h));
                         }
                     }
                     _ => unreachable!(),

@@ -11,73 +11,73 @@ pub(crate) enum Action {
     /// 单张
     Single(Card),
     /// 五张顺子
-    Straight5(Card),
+    Sequence5(Card),
     /// 六张顺子
-    Straight6(Card),
+    Sequence6(Card),
     /// 七张顺子
-    Straight7(Card),
+    Sequence7(Card),
     /// 八张顺子
-    Straight8(Card),
+    Sequence8(Card),
     /// 九张顺子
-    Straight9(Card),
+    Sequence9(Card),
     /// 十张顺子
-    Straight10(Card),
+    Sequence10(Card),
     /// 十一张顺子
-    Straight11(Card),
+    Sequence11(Card),
     /// 十二张顺子
-    Straight12,
+    Sequence12,
     /// 对子
     Pair(Card),
     /// 三连对
-    PairStraight3(Card),
+    PairSequence3(Card),
     /// 四连对
-    PairStraight4(Card),
+    PairSequence4(Card),
     /// 五连对
-    PairStraight5(Card),
+    PairSequence5(Card),
     /// 六连对
-    PairStraight6(Card),
+    PairSequence6(Card),
     /// 七连对
-    PairStraight7(Card),
+    PairSequence7(Card),
     /// 八连对
-    PairStraight8(Card),
+    PairSequence8(Card),
     /// 九连对
-    PairStraight9(Card),
+    PairSequence9(Card),
     /// 十连对
-    PairStraight10(Card),
+    PairSequence10(Card),
     /// 三张
-    Triple(Card),
+    Triplet(Card),
     /// 三带一单
-    TripleSingle(Card, Card),
+    TripletSingle(Card, Card),
     /// 三带一对
-    TriplePair(Card, Card),
+    TripletPair(Card, Card),
     /// 飞机
-    TripleStraight2(Card),
+    TripletSequence2(Card),
     /// 飞机带两单
-    TripleStraight2Single(Card, Card, Card),
+    TripletSequence2Single(Card, Card, Card),
     /// 飞机带两双
-    TripleStraight2Pair(Card, Card, Card),
+    TripletSequence2Pair(Card, Card, Card),
     /// 三飞
-    TripleStraight3(Card),
+    TripletSequence3(Card),
     /// 三飞带三单
-    TripleStraight3Single(Card, Card, Card, Card),
+    TripletSequence3Single(Card, Card, Card, Card),
     /// 三飞带三双
-    TripleStraight3Pair(Card, Card, Card, Card),
+    TripletSequence3Pair(Card, Card, Card, Card),
     /// 四飞
-    TripleStraight4(Card),
+    TripletSequence4(Card),
     /// 四飞带四单
-    TripleStraight4Single(Card, Card, Card, Card, Card),
+    TripletSequence4Single(Card, Card, Card, Card, Card),
     /// 四飞带四双
-    TripleStraight4Pair(Card, Card, Card, Card, Card),
+    TripletSequence4Pair(Card, Card, Card, Card, Card),
     /// 五飞
-    TripleStraight5(Card),
+    TripletSequence5(Card),
     /// 五飞带五单
-    TripleStraight5Single(Card, Card, Card, Card, Card, Card),
+    TripletSequence5Single(Card, Card, Card, Card, Card, Card),
     /// 六飞
-    TripleStraight6(Card),
+    TripletSequence6(Card),
     /// 四带二单
-    BombSingle(Card, Card, Card),
+    QuadSingle(Card, Card, Card),
     /// 四带二对
-    BombPair(Card, Card, Card),
+    QuadPair(Card, Card, Card),
 
     /// 炸弹
     Bomb(Card),
@@ -90,28 +90,28 @@ impl From<Action> for Vec<Card> {
         match action {
             Action::None => Vec::new(),
             Action::Single(c) => vec![c],
-            Action::Straight5(c) => {
+            Action::Sequence5(c) => {
                 straight_cards(StraightType::Single, c, 5, Carry::None, Vec::new())
             }
-            Action::Straight6(c) => {
+            Action::Sequence6(c) => {
                 straight_cards(StraightType::Single, c, 6, Carry::None, Vec::new())
             }
-            Action::Straight7(c) => {
+            Action::Sequence7(c) => {
                 straight_cards(StraightType::Single, c, 7, Carry::None, Vec::new())
             }
-            Action::Straight8(c) => {
+            Action::Sequence8(c) => {
                 straight_cards(StraightType::Single, c, 8, Carry::None, Vec::new())
             }
-            Action::Straight9(c) => {
+            Action::Sequence9(c) => {
                 straight_cards(StraightType::Single, c, 9, Carry::None, Vec::new())
             }
-            Action::Straight10(c) => {
+            Action::Sequence10(c) => {
                 straight_cards(StraightType::Single, c, 10, Carry::None, Vec::new())
             }
-            Action::Straight11(c) => {
+            Action::Sequence11(c) => {
                 straight_cards(StraightType::Single, c, 11, Carry::None, Vec::new())
             }
-            Action::Straight12 => straight_cards(
+            Action::Sequence12 => straight_cards(
                 StraightType::Single,
                 Card::Three,
                 12,
@@ -119,89 +119,89 @@ impl From<Action> for Vec<Card> {
                 Vec::new(),
             ),
             Action::Pair(c) => straight_cards(StraightType::Pair, c, 1, Carry::None, Vec::new()),
-            Action::PairStraight3(c) => {
+            Action::PairSequence3(c) => {
                 straight_cards(StraightType::Pair, c, 3, Carry::None, Vec::new())
             }
-            Action::PairStraight4(c) => {
+            Action::PairSequence4(c) => {
                 straight_cards(StraightType::Pair, c, 4, Carry::None, Vec::new())
             }
-            Action::PairStraight5(c) => {
+            Action::PairSequence5(c) => {
                 straight_cards(StraightType::Pair, c, 5, Carry::None, Vec::new())
             }
-            Action::PairStraight6(c) => {
+            Action::PairSequence6(c) => {
                 straight_cards(StraightType::Pair, c, 6, Carry::None, Vec::new())
             }
-            Action::PairStraight7(c) => {
+            Action::PairSequence7(c) => {
                 straight_cards(StraightType::Pair, c, 7, Carry::None, Vec::new())
             }
-            Action::PairStraight8(c) => {
+            Action::PairSequence8(c) => {
                 straight_cards(StraightType::Pair, c, 8, Carry::None, Vec::new())
             }
-            Action::PairStraight9(c) => {
+            Action::PairSequence9(c) => {
                 straight_cards(StraightType::Pair, c, 9, Carry::None, Vec::new())
             }
-            Action::PairStraight10(c) => {
+            Action::PairSequence10(c) => {
                 straight_cards(StraightType::Pair, c, 10, Carry::None, Vec::new())
             }
-            Action::Triple(c) => {
+            Action::Triplet(c) => {
                 straight_cards(StraightType::Triple, c, 1, Carry::None, Vec::new())
             }
-            Action::TripleSingle(c1, c2) => {
+            Action::TripletSingle(c1, c2) => {
                 straight_cards(StraightType::Triple, c1, 1, Carry::Single, vec![c2])
             }
-            Action::TriplePair(c1, c2) => {
+            Action::TripletPair(c1, c2) => {
                 straight_cards(StraightType::Triple, c1, 1, Carry::Pair, vec![c2])
             }
-            Action::TripleStraight2(c) => {
+            Action::TripletSequence2(c) => {
                 straight_cards(StraightType::Triple, c, 2, Carry::None, Vec::new())
             }
-            Action::TripleStraight2Single(c1, c2, c3) => {
+            Action::TripletSequence2Single(c1, c2, c3) => {
                 straight_cards(StraightType::Triple, c1, 2, Carry::Single, vec![c2, c3])
             }
-            Action::TripleStraight2Pair(c1, c2, c3) => {
+            Action::TripletSequence2Pair(c1, c2, c3) => {
                 straight_cards(StraightType::Triple, c1, 2, Carry::Pair, vec![c2, c3])
             }
-            Action::TripleStraight3(c) => {
+            Action::TripletSequence3(c) => {
                 straight_cards(StraightType::Triple, c, 3, Carry::None, Vec::new())
             }
-            Action::TripleStraight3Single(c1, c2, c3, c4) => {
+            Action::TripletSequence3Single(c1, c2, c3, c4) => {
                 straight_cards(StraightType::Triple, c1, 3, Carry::Single, vec![c2, c3, c4])
             }
-            Action::TripleStraight3Pair(c1, c2, c3, c4) => {
+            Action::TripletSequence3Pair(c1, c2, c3, c4) => {
                 straight_cards(StraightType::Triple, c1, 3, Carry::Pair, vec![c2, c3, c4])
             }
-            Action::TripleStraight4(c) => {
+            Action::TripletSequence4(c) => {
                 straight_cards(StraightType::Triple, c, 4, Carry::None, Vec::new())
             }
-            Action::TripleStraight4Single(c1, c2, c3, c4, c5) => straight_cards(
+            Action::TripletSequence4Single(c1, c2, c3, c4, c5) => straight_cards(
                 StraightType::Triple,
                 c1,
                 4,
                 Carry::Single,
                 vec![c2, c3, c4, c5],
             ),
-            Action::TripleStraight4Pair(c1, c2, c3, c4, c5) => straight_cards(
+            Action::TripletSequence4Pair(c1, c2, c3, c4, c5) => straight_cards(
                 StraightType::Triple,
                 c1,
                 4,
                 Carry::Pair,
                 vec![c2, c3, c4, c5],
             ),
-            Action::TripleStraight5(c) => {
+            Action::TripletSequence5(c) => {
                 straight_cards(StraightType::Triple, c, 5, Carry::None, Vec::new())
             }
-            Action::TripleStraight5Single(c1, c2, c3, c4, c5, c6) => straight_cards(
+            Action::TripletSequence5Single(c1, c2, c3, c4, c5, c6) => straight_cards(
                 StraightType::Triple,
                 c1,
                 5,
                 Carry::Single,
                 vec![c2, c3, c4, c5, c6],
             ),
-            Action::TripleStraight6(c) => {
+            Action::TripletSequence6(c) => {
                 straight_cards(StraightType::Triple, c, 6, Carry::None, Vec::new())
             }
-            Action::BombSingle(c1, c2, c3) => vec![c1, c1, c1, c1, c2, c3],
-            Action::BombPair(c1, c2, c3) => vec![c1, c1, c1, c1, c2, c2, c3, c3],
+            Action::QuadSingle(c1, c2, c3) => vec![c1, c1, c1, c1, c2, c3],
+            Action::QuadPair(c1, c2, c3) => vec![c1, c1, c1, c1, c2, c2, c3, c3],
             Action::Bomb(c) => vec![c, c, c, c],
             Action::Rocket => vec![Card::BlackJoker, Card::RedJoker],
         }
