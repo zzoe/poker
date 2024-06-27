@@ -29,6 +29,11 @@ impl Hand {
         self.0
     }
 
+    /// 手牌张数
+    pub fn size(&self) -> u32 {
+        self.0.count_ones()
+    }
+
     pub fn is_empty(&self) -> bool {
         self.0 == 0
     }
@@ -686,6 +691,11 @@ impl Iterator for Hand {
                 s => return s,
             }
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let size = self.size() as usize;
+        (size, Some(size))
     }
 }
 
